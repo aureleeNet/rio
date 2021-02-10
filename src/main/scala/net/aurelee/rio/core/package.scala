@@ -19,6 +19,25 @@ package object core {
   @inline final def body(norm: Norm): Formula = norm._1
   @inline final def bodies(norms: Seq[Norm]): Seq[Formula] = norms.map(body)
 
+  final def isUnitClause(clause: Formula): Boolean = {
+    clause match {
+      case PLNeg(PLProp(_)) | PLProp(_) => true
+      case _ => false
+    }
+  }
+  final def getUnitAtom(unit: Formula): Formula = {
+    (unit: @unchecked) match {
+      case PLNeg(prop@PLProp(_)) => prop
+      case prop@PLProp(_) => prop
+    }
+  }
+  final def getUnitPolarityAsFormula(unit: Formula): Formula = {
+    (unit: @unchecked) match {
+      case PLNeg(PLProp(_)) => PLBottom
+      case PLProp(_) => PLTop
+    }
+  }
+
   @inline final def mkConj(left: Formula, right: Formula): Formula = mkConjs(Seq(left, right))
   @inline final def mkConjs(formulas: Iterable[Formula]): Formula = if (formulas.isEmpty) PLTop else formulas.reduce(PLConj)
   @inline final def mkDisj(left: Formula, right: Formula): Formula = mkDisjs(Seq(left, right))
@@ -120,18 +139,31 @@ package object core {
 
   final def interreduce(formulas: Seq[Formula]): Seq[Formula] = {
     import net.aurelee.rio.sat.consequence
-    val simpSet = formulas.map(simp)
-    val cnfSimp = cnf(mkConjs(simpSet)).conjs
-    val intermediate = cnfSimp
-    // TODO: unit propagation
-    var result: Seq[Formula] = Seq.empty
-    intermediate.foreach { f =>
-      if (!consequence(result, f)) {
-        result = result.filterNot(x => consequence(Seq(f), x))
-        result = result :+ f
+    if (formulas.isEmpty) formulas
+    else {
+      val simpSet = formulas.map(simp).distinct
+      val cnfSimp = cnf(mkConjs(simpSet)).conjs
+      var subsumptionResult: Seq[Formula] = Seq.empty
+      cnfSimp.foreach { f =>
+        if (!consequence(subsumptionResult, f)) {
+          subsumptionResult = subsumptionResult.filterNot(x => consequence(Seq(f), x))
+          subsumptionResult = subsumptionResult :+ f
+        }
       }
+      // TODO: Not yet fully working when new units arise
+      var rewriteResult: Seq[Formula] = Seq.empty
+      while (subsumptionResult.nonEmpty) {
+        val f = subsumptionResult.head
+        subsumptionResult = subsumptionResult.tail
+        if (isUnitClause(f)) {
+          rewriteResult = rewriteResult.map(_.replace(getUnitAtom(f), getUnitPolarityAsFormula(f)))
+          rewriteResult = rewriteResult :+ f
+        } else {
+          rewriteResult = rewriteResult :+ f
+        }
+      }
+      cnf(simp(mkConjs(rewriteResult))).conjs
     }
-    result
   }
 
   final def interpretNorm(formula: TPTP.THF.Formula): Norm = {
