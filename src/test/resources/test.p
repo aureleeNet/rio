@@ -1,5 +1,7 @@
 thf(semantics, logic, (
-    $iol := [ $output := $out4 ] )).
+    $iol := [ $output := $out4,
+              $constrained := $credulous,
+              $constraints := [a, b, a & b] ] )).
 
 thf(norm1, axiom, [a,x]).
 thf(norm2, axiom, [b,y]).

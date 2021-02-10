@@ -2,6 +2,7 @@ package net.aurelee.rio.reasoner
 
 import leo.datastructures.TPTP
 import net.aurelee.rio.core._
+import net.aurelee.rio.reasoner
 
 object Reasoner {
   sealed abstract class RioResult
@@ -23,22 +24,28 @@ object Reasoner {
       case TPTP.THFAnnotated(name, role, TPTP.THF.Logical(formula), _) =>
         role match {
           case "axiom" =>
-            axiomFormulas += (name -> interpretNorm(formula))
+            if (axiomFormulas.isDefinedAt(name)) throw new UnsupportedOperationException(s"Formula '$name' defined more than once.")
+            else axiomFormulas += (name -> interpretNorm(formula))
           case "hypothesis" =>
-            hypFormulas += (name -> interpretFormula(formula))
+            if (hypFormulas.isDefinedAt(name)) throw new UnsupportedOperationException(s"Formula '$name' defined more than once.")
+            else hypFormulas += (name -> interpretFormula(formula))
           case "conjecture" =>
-            conjectureFormulas += (name -> interpretFormula(formula))
+            if (conjectureFormulas.isDefinedAt(name)) throw new UnsupportedOperationException(s"Formula '$name' defined more than once.")
+            else conjectureFormulas += (name -> interpretFormula(formula))
           case _ => throw new UnsupportedOperationException(s"Role '$role' of formula '$name' is not supported.")
         }
       case formula => throw new UnsupportedOperationException(s"Only THF logic formulas are supported, but formula '${formula.name}' is ${formula.formulaType.toString}.")
     }
 
-    val grossOutputBasis = config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)
-//    grossOutputBasis.foreach { f =>
-//      println(f.pretty)
-//    }
+    // Output is the gross output if no constraints are used. Otherwise handle the constrained case.
+    val outputBasis = config.constrained match {
+      case Some(netOutputFunction) =>
+        val maxFamily = reasoner.maxFamily(config.operator, hypFormulas.values.toVector, axiomFormulas.values.toVector, config.constraints, config.throughput)
+        val outFamily = reasoner.outFamily(maxFamily, config.operator, hypFormulas.values.toVector, config.throughput)
+        netOutputFunction(outFamily)
+      case None => config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)
+    }
 
-    val outputBasis = grossOutputBasis
     if (conjectureFormulas.isEmpty) {
       OutputGenerated(outputBasis)
     } else {
