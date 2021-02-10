@@ -1,16 +1,16 @@
 thf(semantics, logic, (
-    $iol := [ $output := $out4,
+    $iol := [ $output := $out3,
               $constrained := $credulous,
-              $constraints := [a, b, a & b] ] )).
+              $constraints := [helping] ] )).
 
-thf(norm1, axiom, [a,x]).
-thf(norm2, axiom, [b,y]).
-thf(norm3, axiom, [x | y,z]).
+thf(norm1, axiom, [$true, helping]).
+thf(norm2, axiom, [helping, telling]).
+thf(norm3, axiom, [~helping, ~telling]).
 
-thf(input1, hypothesis, a | b).
+thf(input1, hypothesis, ~helping).
 
-thf(c1, conjecture, x).
-thf(c2, conjecture, y).
-thf(c3, conjecture, y | x).
+%thf(c1, conjecture, x).
+%thf(c2, conjecture, y).
+%thf(c3, conjecture, y | x).
 
 

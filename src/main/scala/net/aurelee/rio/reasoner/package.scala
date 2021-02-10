@@ -37,8 +37,29 @@ package object reasoner {
                       norms: Seq[Norm],
                       constraints: Seq[Formula],
                       throughput: Boolean): Seq[Seq[Norm]] = {
-    Seq.empty // TODO
+    import net.aurelee.rio.sat.consistent
+    var normsSets: Seq[Seq[Norm]] = Vector(norms)
+    var result: Seq[Seq[Norm]] = Vector.empty
+    while(normsSets.nonEmpty) {
+      val setSize = normsSets.head.size
+      val consistentNorms = normsSets.filter(n => consistent(outOperator.apply(n, input, throughput).concat(constraints)))
+      result = result.concat(consistentNorms)
+      val inconsistentNorms = normsSets.diff(consistentNorms)
+      normsSets = inconsistentNorms.flatMap(subsetsOneSmaller).distinct
+      normsSets = normsSets.filterNot(n => result.exists(r => subset(n,r)))
+    }
+    result
   }
+
+  private[this] def subsetsOneSmaller[A](set: Seq[A]): Seq[Seq[A]] = {
+    var result: Seq[Seq[A]] = Vector.empty
+    set.foreach { s =>
+      result = result :+ set.diff(Seq(s))
+    }
+    result
+  }
+
+  private[this] def subset[A](a: Seq[A], b: Seq[A]): Boolean = a.diff(b).isEmpty
 
   final def outFamily(maxFamily: Seq[Seq[Norm]],
                       outOperator: OutOperator,
