@@ -1,13 +1,14 @@
 package net.aurelee
 
 import leo.datastructures.TPTP
-import net.aurelee.rio.core.{ConstrainedCredulous, ConstrainedSetting, ConstrainedSkeptical, OutOperator, RioConfig}
+import net.aurelee.rio.core.OutOperator
+import net.aurelee.rio.reasoner.{ConstrainedCredulous, ConstrainedSetting, ConstrainedSkeptical, RioConfig}
 
 package object rio {
   protected[rio] class UnknownParameterException(val parameterName: String, val allowedParameters: String) extends RuntimeException
   protected[rio] class MalformedLogicSpecificationException(message: String) extends RuntimeException(message)
   protected[rio] class UnspecifiedLogicException extends RuntimeException
-  protected[rio] class UnsupportedLogicException(val logic: String) extends RuntimeException
+  protected[rio] class UnsupportedLogicException(logic: String) extends RuntimeException(logic)
 
   final def generateRioConfigFromSpec(spec: TPTP.AnnotatedFormula): RioConfig = {
     import leo.datastructures.TPTP.THF
@@ -46,11 +47,11 @@ package object rio {
   }
 
   private[this] final def tupleElementsToMap(tupleElements: Seq[TPTP.THF.Formula]): Map[String, String] = {
-    import TPTP.THF._
+    import TPTP.THF
     import scala.collection.mutable
     val resultMap: mutable.Map[String, String] = mutable.Map.empty
     tupleElements.foreach {
-      case BinaryFormula(:=, FunctionTerm(key, Seq()), FunctionTerm(value, Seq())) =>
+      case THF.BinaryFormula(THF.:=, THF.FunctionTerm(key, Seq()), THF.FunctionTerm(value, Seq())) =>
         resultMap += (key -> value)
       case entry => throw new MalformedLogicSpecificationException(s"Malformed logic specification entry: ${entry.pretty}")
     }
