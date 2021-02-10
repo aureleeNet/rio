@@ -10,8 +10,11 @@ lazy val rio = (project in file("."))
     scalacOptions ++= Seq(
       "-deprecation",
       "-feature",
-      "-target:", "11"
+      "-target:11",
     ),
+    unmanagedResourceDirectories in Compile += baseDirectory.value / "contrib",
+    includeFilter in (Compile, unmanagedResourceDirectories):= ".dll,.so",
     licenses += "BSD-3-Clause" -> url("https://opensource.org/licenses/BSD-3-Clause"),
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
+    libraryDependencies += "net.java.dev.jna" % "jna" % "5.7.0"
   ).dependsOn(parserLib)
