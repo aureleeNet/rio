@@ -7,6 +7,7 @@ import net.aurelee.rio.reasoner.{ConstrainedCredulous, ConstrainedSetting, Const
 package object rio {
   protected[rio] class UnknownParameterException(val parameterName: String, val allowedParameters: String) extends RuntimeException
   protected[rio] class MalformedLogicSpecificationException(message: String) extends RuntimeException(message)
+  protected[rio] class SemanticsException(message: String) extends RuntimeException(message)
   protected[rio] class UnspecifiedLogicException extends RuntimeException
   protected[rio] class UnsupportedLogicException(logic: String) extends RuntimeException(logic)
 

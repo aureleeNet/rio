@@ -141,7 +141,7 @@ package object core {
         val left = interpretFormula(elements.head)
         val right = interpretFormula(elements(1))
         (left, right)
-      case _ => throw new UnsupportedOperationException
+      case _ => throw new SemanticsException(s"Norms have to be tuples with two elements, but '${formula.pretty}' was given.")
     }
   }
   final def interpretFormula(formula: TPTP.THF.Formula): Formula = {
@@ -184,7 +184,7 @@ package object core {
         val left0 = interpretFormula(left)
         val right0 = interpretFormula(right)
         mkNeg(mkConj(mkImpl(left0, right0), mkImpl(right0, left0)))
-      case _ => throw new UnsupportedOperationException
+      case _ => throw new SemanticsException(s"Only the propositional fragment of THF is supported, but '${formula.pretty}' was given.")
     }
   }
 }

@@ -33,13 +33,6 @@ object Reasoner {
       case formula => throw new UnsupportedOperationException(s"Only THF logic formulas are supported, but formula '${formula.name}' is ${formula.formulaType.toString}.")
     }
 
-//    axiomFormulas.foreach {case (name, f) =>
-//      println(s"$name: ${prettyNorm(f)}")
-//    }
-//    hypFormulas.foreach { case (name, f) =>
-//      println(s"$name: ${f.pretty}")
-//    }
-
     val grossOutputBasis = config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)
 //    grossOutputBasis.foreach { f =>
 //      println(f.pretty)

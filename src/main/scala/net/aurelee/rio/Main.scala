@@ -1,13 +1,11 @@
 package net.aurelee.rio
 
 import leo.datastructures.TPTP
-import leo.datastructures.TPTP.AnnotatedFormula
 import leo.modules.input.TPTPParser
-import net.aurelee.rio.core.OutOperator
-import net.aurelee.rio.reasoner.{ConstrainedCredulous, ConstrainedSetting, ConstrainedSkeptical, RioConfig, Reasoner}
+import net.aurelee.rio.reasoner.{RioConfig, Reasoner}
 
 import scala.io.Source
-import java.io.{File, FileNotFoundException, PrintWriter}
+import java.io.{FileNotFoundException, PrintWriter}
 
 object Main {
   final val name: String = "rio"
@@ -44,23 +42,23 @@ object Main {
         val result = Reasoner(input)(rioConfig)
         result match {
           case Reasoner.OutputAccepted =>
-            println(s"% SZS status Theorem for ${inputFileName}")
+            println(s"% SZS status Theorem for $inputFileName")
           case Reasoner.OutputRejected =>
-            println(s"% SZS status CounterTheorem for ${inputFileName}")
+            println(s"% SZS status CounterTheorem for $inputFileName")
           case Reasoner.OutputGenerated(output) =>
-            println(s"% SZS status Success for ${inputFileName}")
-            println(s"% SZS output start ListOfFormulae for ${inputFileName}")
+            println(s"% SZS status Success for $inputFileName")
+            println(s"% SZS output start ListOfFormulae for $inputFileName")
             output.foreach { f =>
               println(f.pretty)
             }
-            println(s"% SZS output end ListOfFormulae for ${inputFileName}")
+            println(s"% SZS output end ListOfFormulae for $inputFileName")
           case Reasoner.MixedResult(accepted, _) =>
-            println(s"% SZS status WeakerConclusion for ${inputFileName}: Only some of the conjectured outputs are indeed in the out set.")
-            println(s"% SZS output start ListOfFormulae for ${inputFileName}")
+            println(s"% SZS status WeakerConclusion for $inputFileName: Only some of the conjectured outputs are indeed in the out set.")
+            println(s"% SZS output start ListOfFormulae for $inputFileName")
             accepted.foreach { f =>
               println(f.pretty)
             }
-            println(s"% SZS output end ListOfFormulae for ${inputFileName}")
+            println(s"% SZS output end ListOfFormulae for $inputFileName")
         }
 
       } catch {
@@ -69,19 +67,25 @@ object Main {
           usage()
           error = true
         case e: FileNotFoundException =>
-          println(s"% SZS status InputError for ${inputFileName}: File cannot be found or is not readable/writable: ${e.getMessage}")
+          println(s"% SZS status InputError for $inputFileName: File cannot be found or is not readable/writable: ${e.getMessage}")
           error = true
         case e: TPTPParser.TPTPParseException =>
-          println(s"% SZS status SyntaxError for ${inputFileName}: Input file could not be parsed, parse error at ${e.line}:${e.offset}: ${e.getMessage}")
+          println(s"% SZS status SyntaxError for $inputFileName: Input file could not be parsed, parse error at ${e.line}:${e.offset}: ${e.getMessage}")
           error = true
         case e: MalformedLogicSpecificationException =>
-          println(s"% SZS status InputError for ${inputFileName}: Logic specification is malformed: ${e.getMessage}")
+          println(s"% SZS status InputError for $inputFileName: Logic specification is malformed: ${e.getMessage}")
           error = true
         case e: UnsupportedLogicException =>
-          println(s"% SZS status InputError for ${inputFileName}: Output operator is not supported: ${e.getMessage}")
+          println(s"% SZS status InputError for $inputFileName: Output operator is not supported: ${e.getMessage}")
+          error = true
+        case e: UnsupportedOperationException =>
+          println(s"% SZS status UsageError for $inputFileName: ${e.getMessage}")
+          error = true
+        case e: SemanticsException =>
+          println(s"% SZS status SemanticError for $inputFileName: ${e.getMessage}")
           error = true
         case e: Throwable =>
-          println(s"% SZS status Error for ${inputFileName}: Unexpected error -- ${e.getMessage}")
+          println(s"% SZS status Error for $inputFileName: Unexpected error -- ${e.getMessage}")
           println("% This is considered an implementation error; please report this!")
           error = true
       } finally {
