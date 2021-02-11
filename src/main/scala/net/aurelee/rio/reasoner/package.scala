@@ -43,7 +43,6 @@ package object reasoner {
     var normsSets: Seq[Seq[Norm]] = Vector(norms)
     var result: Seq[Seq[Norm]] = Vector.empty
     while(normsSets.nonEmpty) {
-      val setSize = normsSets.head.size
       val consistentNorms = normsSets.filter(n => consistent(outOperator.apply(n, input, throughput).concat(constraints)))
       result = result.concat(consistentNorms)
       val inconsistentNorms = normsSets.diff(consistentNorms)

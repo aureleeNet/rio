@@ -26,7 +26,6 @@ object Main {
     if (args.isEmpty) usage()
     else {
       var infile: Option[Source] = None
-      var outfile: Option[PrintWriter] = None
       var error: Boolean = false
       try {
         parseArgs(args.toSeq)
@@ -76,7 +75,7 @@ object Main {
         case e: MalformedLogicSpecificationException =>
           println(s"% SZS status InputError for $inputFileName: Logic specification is malformed: ${e.getMessage}")
           error = true
-        case e: UnspecifiedLogicException =>
+        case _: UnspecifiedLogicException =>
           println(s"% SZS status UsageError for $inputFileName: Output operator is not specified. Add a logic specification to the problem or pass -o explicitly.")
           error = true
         case e: UnsupportedLogicException =>
