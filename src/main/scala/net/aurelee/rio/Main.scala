@@ -14,6 +14,7 @@ object Main {
   private[this] var inputFileName = ""
   private[this] var outOperatorParameter: Option[String] = None
   private[this] var parameterNames: Set[String] = Set.empty
+  private[this] var constraintsParameters: Set[String] = Set.empty
 
   def main(args: Array[String]): Unit = {
     if (args.contains("--help")) {
@@ -75,6 +76,9 @@ object Main {
         case e: MalformedLogicSpecificationException =>
           println(s"% SZS status InputError for $inputFileName: Logic specification is malformed: ${e.getMessage}")
           error = true
+        case e: UnspecifiedLogicException =>
+          println(s"% SZS status UsageError for $inputFileName: Output operator is not specified. Add a logic specification to the problem or pass -o explicitly.")
+          error = true
         case e: UnsupportedLogicException =>
           println(s"% SZS status InputError for $inputFileName: Output operator is not supported: ${e.getMessage}")
           error = true
@@ -106,7 +110,27 @@ object Main {
     }
   }
 
-  private[this] final def generateRioConfigFromCLI(): RioConfig = ???
+  private[this] final def generateRioConfigFromCLI(): RioConfig = {
+    import leo.modules.input.TPTPParser.thf
+    import reasoner.{Out1, Out2, Out3, Out4, CredulousNetOutput, SkepticalNetOutput}
+    import core.interpretFormula
+    val outOperator = outOperatorParameter match {
+      case Some(value) => value match {
+        case "out1" => Out1
+        case "out2" => Out2
+        case "out3" => Out3
+        case "out4" => Out4
+        case _ => throw new UnsupportedLogicException(value)
+      }
+      case None => throw new UnspecifiedLogicException
+    }
+    val throughput = parameterNames("throughput")
+    val constrained = if (parameterNames("constrained-credulous")) Some(CredulousNetOutput)
+                      else if (parameterNames("constrained-skeptical")) Some(SkepticalNetOutput)
+                      else None
+    val constraints = constraintsParameters.map(c => interpretFormula(thf(c)))
+    RioConfig(outOperator, throughput, constrained, constraints.toVector)
+  }
 
 
   private[this] final def parseArgs(args: Seq[String]): Any = {
@@ -116,6 +140,9 @@ object Main {
         case Seq("-o", l, rest@_*) =>
           args0 = rest
           outOperatorParameter = Some(l)
+        case Seq("-c", c, rest@_*) =>
+          args0 = rest
+          constraintsParameters = constraintsParameters + c
         case Seq("-p", p, rest@_*) =>
           args0 = rest
           parameterNames = parameterNames + p
@@ -132,7 +159,7 @@ object Main {
   }
 
   private[this] final def usage(): Unit = {
-    println(s"usage: $name [-o <operator>] [-p <parameter>] <problem file>")
+    println(s"usage: $name [-o <operator>] [-p <parameter>] [-c <constraint>] <problem file>")
     println(
       """
         | <problem file> can be either a file name or '-' (without parentheses) for stdin.
@@ -147,7 +174,16 @@ object Main {
         |  -p <parameter>
         |     Set additional parameters to the output operator.
         |     This option is ignored, if <problem file> contains a logic specification statement.
-        |     Supported <parameter>s are: throughput, constrained, credulous, skeptical
+        |     Multiple parameters can be passed.
+        |     Supported <parameter>s are: throughput, constrained-credulous, constrained-skeptical
+        |
+        |  -c <constraint>
+        |     Pass constraints to the reasoning system. <constraint> must be a valid THF formula
+        |     (without annotations). Multiple constraints can be passed by passing multiple
+        |     respective -c options.
+        |     This option is ignored, if <problem file> contains a logic specification statement.
+        |     Constraints are ignored if neither -p constrained-credulous nor -p constrained-skeptical
+        |     was passed.
         |
         |  --version
         |     Prints the version number of the executable and terminates.

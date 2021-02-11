@@ -5,7 +5,9 @@ import net.aurelee.rio.core.{Formula, Norm, OutOperator, bodies, body, head, mkD
 package object reasoner {
   import sat.globalPicoSATInstance
 
-  final case class RioConfig(operator: OutOperator, throughput: Boolean, constrained: Option[NetOutputFunction], constraints: Seq[Formula])
+  final case class RioConfig(operator: OutOperator, throughput: Boolean, constrained: Option[NetOutputFunction], constraints: Seq[Formula]) {
+    def pretty: String = s"config<out=${operator.name}, throughput=$throughput, constrained=${constrained.toString}, constraints=${constraints.map(_.pretty).mkString("[", ",", "]")}>"
+  }
 
   final def materialization(norms: Seq[Norm]): Seq[Formula] = {
     norms.map(n => mkImpl(body(n), head(n)))

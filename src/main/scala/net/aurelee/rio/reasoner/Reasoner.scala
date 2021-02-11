@@ -12,6 +12,7 @@ object Reasoner {
   case class MixedResult(accepted: Seq[Formula], rejected: Seq[Formula]) extends RioResult
 
   final def apply(problem: Seq[TPTP.AnnotatedFormula])(config: RioConfig): RioResult = {
+    println(s"% Use configuration: ${config.pretty}")
     import scala.collection.mutable
     // Treat axioms as norm
     // Treat hypotheses as input

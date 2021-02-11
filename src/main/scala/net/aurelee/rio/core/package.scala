@@ -143,20 +143,19 @@ package object core {
     else {
       val simpSet = formulas.map(simp).distinct
       val cnfSimp = cnf(mkConjs(simpSet)).conjs
-      var subsumptionResult: Seq[Formula] = Seq.empty
+      var subsumptionResult: Seq[Formula] = Vector.empty
       cnfSimp.foreach { f =>
         if (!consequence(subsumptionResult, f)) {
           subsumptionResult = subsumptionResult.filterNot(x => consequence(Seq(f), x))
           subsumptionResult = subsumptionResult :+ f
         }
       }
-      // TODO: Not yet fully working when new units arise
-      var rewriteResult: Seq[Formula] = Seq.empty
+      var rewriteResult: Seq[Formula] = Vector.empty
       while (subsumptionResult.nonEmpty) {
         val f = subsumptionResult.head
         subsumptionResult = subsumptionResult.tail
         if (isUnitClause(f)) {
-          rewriteResult = rewriteResult.map(_.replace(getUnitAtom(f), getUnitPolarityAsFormula(f)))
+          subsumptionResult = subsumptionResult.map(r => simp(r.replace(getUnitAtom(f), getUnitPolarityAsFormula(f))))
           rewriteResult = rewriteResult :+ f
         } else {
           rewriteResult = rewriteResult :+ f
