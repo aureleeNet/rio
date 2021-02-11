@@ -16,7 +16,10 @@ package net.aurelee.rio.sat
   */
 abstract class PicoSAT(enableTracing: Boolean)  {
   import com.sun.jna.Native
-  private final val lib = Native.load("picosat", classOf[LibPicoSAT])
+  private final val lib = {
+    Native.extractFromResourcePath("picosat")
+    Native.load("picosat", classOf[LibPicoSAT])
+  }
 
   import PicoSAT.State
 

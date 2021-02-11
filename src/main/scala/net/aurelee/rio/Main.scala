@@ -9,7 +9,7 @@ import java.io.{FileNotFoundException, PrintWriter}
 
 object Main {
   final val name: String = "rio"
-  final val version: Double = 0.1
+  final val version: String = "1.0"
 
   private[this] var inputFileName = ""
   private[this] var outOperatorParameter: Option[String] = None
