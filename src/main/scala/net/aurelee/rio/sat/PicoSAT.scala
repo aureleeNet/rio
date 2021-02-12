@@ -14,20 +14,20 @@ package net.aurelee.rio.sat
  *  @note Ported to JNA library by Alexander Steen on 2021
   * @since 7/27/16.
   */
-abstract class PicoSAT(enableTracing: Boolean)  {
+sealed abstract class PicoSAT(enableTracing: Boolean)  {
   import com.sun.jna.Native
-  private final val lib = {
+  private[this] final val lib = {
     Native.extractFromResourcePath("picosat")
     Native.load("picosat", classOf[LibPicoSAT])
   }
 
   import PicoSAT.State
 
-  protected var context: Long = lib.picosat_init()
+  private[this] var context: Long = lib.picosat_init()
   if(context == 0)
     throw new OutOfMemoryError()
 
-  protected val tracing: Boolean = if(enableTracing)
+  private[this] val tracing: Boolean = if(enableTracing)
     if (lib.picosat_enable_trace_generation(context) != 0)
       true
     else throw new UnsupportedOperationException("Trace generation not supported.")
@@ -332,6 +332,39 @@ abstract class PicoSAT(enableTracing: Boolean)  {
   def version(): String = {
     lib.picosat_version()
   }
+
+  import com.sun.jna.Library
+  protected[this] trait LibPicoSAT extends Library {
+    def picosat_init() : Long
+    def picosat_enable_trace_generation(context: Long) : Int
+    def picosat_reset(context: Long) : Unit
+    def picosat_res(context: Long) : Int
+    def picosat_inc_max_var(context: Long) : Int
+    def picosat_add(context: Long, lit: Int) : Int
+    def picosat_sat(context: Long, decision_limit: Int) : Int
+    def picosat_set_global_default_phase(context: Long, phase: Int) : Unit
+    def picosat_set_default_phase_lit(context: Long, lit: Int, phase: Int) : Unit
+    def picosat_reset_phases(context: Long) : Unit
+    def picosat_reset_scores(context: Long) : Unit
+    def picosat_remove_learned(context: Long, percentage: Int) : Unit
+    def picosat_set_more_important_lit(context: Long, lit: Int) : Unit
+    def picosat_set_less_important_lit(context: Long, lit: Int) : Unit
+    def picosat_adjust(context: Long, maxIdx : Int) : Unit
+    def picosat_variables(context: Long) : Int
+    def picosat_added_original_clauses(context: Long) : Int
+    def picosat_seconds(context: Long) : Double
+    def picosat_assume(context: Long, lit: Int) : Unit
+    def picosat_deref(context: Long, lit: Int) : Int
+    def picosat_deref_toplevel(context: Long, lit: Int) : Int
+    def picosat_inconsistent(context: Long) : Int
+    def picosat_failed_assumption(context: Long, lit: Int) : Int
+    def picosat_failed_assumptions(context: Long) : List[Int]
+    def picosat_changed(context: Long) : Int
+    def picosat_coreclause(context: Long, clauseIdx: Int) : Int
+    def picosat_corelit(context: Long, lit: Int) : Int
+    def picosat_usedlit(context: Long, lit: Int) : Int
+    def picosat_version(): String
+  }
 }
 
 /*
@@ -340,7 +373,7 @@ abstract class PicoSAT(enableTracing: Boolean)  {
 object PicoSAT {
   private[this] lazy val globalInstance:PicoSAT = apply(true)
 
-  def get(): PicoSAT = globalInstance
+  final def get(): PicoSAT = globalInstance
 
   /**
    * Returns a new PicoSAT context.
@@ -348,22 +381,23 @@ object PicoSAT {
    * @param enableTracing Enables tracing used to genrates cores. Enabling tracing results in the solver using more
    *                      memory.
    */
-  def apply(enableTracing: Boolean = false) : PicoSAT = {
+  final def apply(enableTracing: Boolean = false) : PicoSAT = {
     new PicoSAT(enableTracing) {}
   }
 
   /**
     * Used to represent the state a context is in.
     */
-  sealed abstract class State(code: Int)
-  object State {
+  sealed abstract class State
+  final case object Unknown extends State
+  final case object SAT extends State
+  final case object UNSAT extends State
+
+  final object State {
     def apply(code: Int): State = code match {
       case 0 => Unknown
       case 10 => SAT
       case 20 => UNSAT
     }
   }
-  case object Unknown extends State(0)
-  case object SAT extends State(10)
-  case object UNSAT extends State(20)
 }

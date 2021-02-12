@@ -2,10 +2,10 @@ package net.aurelee.rio
 
 import leo.datastructures.TPTP
 import leo.modules.input.TPTPParser
-import net.aurelee.rio.reasoner.{RioConfig, Reasoner}
+import net.aurelee.rio.reasoner.{Reasoner, RioConfig}
 
 import scala.io.Source
-import java.io.{FileNotFoundException, PrintWriter}
+import java.io.FileNotFoundException
 
 object Main {
   final val name: String = "rio"
@@ -60,7 +60,6 @@ object Main {
             }
             println(s"% SZS output end ListOfFormulae for $inputFileName")
         }
-
       } catch {
         case e: IllegalArgumentException =>
           println(e.getMessage)
@@ -110,9 +109,9 @@ object Main {
   }
 
   private[this] final def generateRioConfigFromCLI(): RioConfig = {
-    import leo.modules.input.TPTPParser.thf
-    import reasoner.{Out1, Out2, Out3, Out4, CredulousNetOutput, SkepticalNetOutput}
     import core.interpretFormula
+    import leo.modules.input.TPTPParser.thf
+    import reasoner._
     val outOperator = outOperatorParameter match {
       case Some(value) => value match {
         case "out1" => Out1
