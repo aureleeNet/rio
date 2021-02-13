@@ -1,4 +1,6 @@
 # rio: Reasoner for Input/Output Logics
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4540273.svg)](https://doi.org/10.5281/zenodo.4540273)
+
 
 Input/Output (I/O) logics have been devised by D. Makinson and L. van der Torre [1]
 as a class of formal systems for norm-based deontic reasoning. Intuitively,
