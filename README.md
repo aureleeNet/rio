@@ -43,7 +43,7 @@ You can also download the sources and build `rio` yourself.
 
 ### Using a pre-built built
 
-When using a pre-built `.jar` file, you are already done. You can run `rio` by 
+When using a pre-built `.jar` file, you are already done. `rio` is run by 
 (assuming that the `.jar` file is called `rio.jar` and in your current working directory) ...
 
 ```
@@ -104,7 +104,45 @@ usage: rio [-o <operator>] [-p <parameter>] [-c <constraint>] <problem file>
 
 ## Input and output formats
 
-...
+The input files for `rio` are plain text files according to the TPTP THF language, though
+only the propositional fragment of THF is currently supported. The semantics of formula roles
+differs from the TPTP standard (see below), and the problem needs to contain a logic specification
+of the form 
+
+```
+thf(<name>, logic, $iol := [<parameter> := <value>, ...]).
+```
+
+Alternatively, semantics parameters can also be passed using command-line arguments.
+
+`rio` gives SZS status results as follows:
+
++ SZS status Theorem if the problem contains conjectured outputs (formulas of role `conjecture`) and
+  every conjectured output is indeed in the output set.
++ SZS status Unsatisfiable if the problem contains conjectured outputs (formulas of role `conjecture`) and
+  no conjectured output is indeed in the output set. 
++ SZS status WeakerConclusion if the problem contains conjectured outputs (formulas of role `conjecture`) and
+  only some of the conjectured outputs are indeed in the output set.
++ SZS status Success if the problem does not contain conjectured outputs (formulas of role `conjecture`).
+  In this case, a SZS result of type ListOfFormulae containing the finite base of the output set is given. 
+
+### Semantics specification
+
+Parameter | Value | Description
+------- | ------ | --------
+`$output` | One of `$out1`, `$out2`, `$out3`, `$out4` | Select the output operator (required parameter)
+`$throughput` | `$true` or `$false` | Enable/Disable throughout (default: `$false`)
+`$constrained` | `$credulous` or `$skeptical` | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset)
+`$constraints` | `[<list of formulas>]` | Set the constraints for constrained output. Ignored of `$constrained` is not set (default: unset).
+
+### Problem contents
+
+Formula role | Description
+------------ | --------------
+`axiom` | Formulas of role `axiom` specify the conditional norms. Every axiom formula needs to be a pair/tuple of the form `[left,right]` where both left and right are formulas. `left` is the *body* of the norm (the condition) and `right` is the *head* of the norm (the obligation).
+`hypothesis` | Formulas of role `hypothesis` denote the inputs and are regular formulas
+`conjecture` | Formulas of role `conjecture` denote conjectured outputs. `rio` will check whether the formula is indeed in the output set.
+
 
 ## Examples
 
@@ -142,10 +180,78 @@ Then you run `rio` via:
 ```
 
 As can be seen, only one of the conjectures (only `c1`) is indeed detached.
+As a consequence, SZS status WeakerConclusion is returned, together with an output
+list of all correctly conjectured outputs. If every conjectures output can indeed be
+detached, SZS status Theorem is returned.
 
 ### Use case 2: Generate set of obligations
 
-...
+If no conjectures are contained in the problem file, e.g., as in ...
+
+```
+thf(semantics, logic, (
+    $iol := [ $output := $out3 ] )).
+
+thf(norm1, axiom, [$true, helping]).
+thf(norm2, axiom, [helping, telling]).
+thf(norm3, axiom, [~helping, ~telling]).
+
+thf(input1, hypothesis, ~helping).
+```
+
+`rio` will instead output a complete finite basis of detachable formulas and SZS status Success:
+
+```
+% SZS status Success for out3.p
+% SZS output start ListOfFormulae for out3.p
+$false
+% SZS output end ListOfFormulae for out3.p
+```
+
+A finite basis is a finite set of formulas A such that every detachable output x
+follows from A, i.e., A ⊧ x. This allows to have a finite representation for
+the infinite set of outputs. In the above case, every output x is in the output
+set as {⊥} ⊧ x for every x.
+
+
+### Use case 3: Constrained outputs
+
+In the previous example (use case 2), the output set becomes too large as the
+input and the set of norm entail an inconsistency, known as Contrary To Duty
+situations in the Deontic logic community.
+
+In the context of I/O logics, the output set can be constrained to remedy this.
+This is reflected in `rio` by enabling constrained I/O operations via the logic
+specification:
+
+```
+thf(semantics, logic, (
+    $iol := [ $output := $out3,
+              $constrained := $credulous,
+              $constraints := [~helping] ] )).
+
+thf(norm1, axiom, [$true, helping]).
+thf(norm2, axiom, [helping, telling]).
+thf(norm3, axiom, [~helping, ~telling]).
+
+thf(input1, hypothesis, ~helping).
+```
+
+
+In this case, the output is constrained to be the credulous output aggregate of 
+all maximally consistent norm families wrt. detachment via out<sub>3</sub>
+and the constraint `~helping`. See [2] for the theoretical details.
+
+This problem file gives a consistent output set as follows:
+
+
+```
+% SZS status Success for out3-constrained.p
+% SZS output start ListOfFormulae for out3-constrained.p
+~ telling
+% SZS output end ListOfFormulae for out3-constrained.p
+```
+ 
  
 ## License
 
