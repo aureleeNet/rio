@@ -22,7 +22,7 @@ respectively, with (cumulative) transitivity. For details, cf. we refer to [1].
 ## The Tool
 
 `rio` provides a TPTP-aligned [3] automated reasoning system for unconstrained and
-constrained I/O logics basid on the out<sub>i</sub> operators, 1 ≤ i ≤ 4.
+constrained I/O logics based on the out<sub>i</sub> operators, 1 ≤ i ≤ 4.
 It is implemented as a Scala application and based on the
 `scala-tptp-parser` [4].
 
