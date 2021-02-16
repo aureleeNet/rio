@@ -68,7 +68,9 @@ that just wraps the jar file with shell run script.
 ## Usage
 
 `rio` requires a Java runtime environment (JRE), version ≥ 11, to be run. Older java versions
-might also work, though this has not been tested.
+might also work, though this has not been tested. Additionally, `rio` is currently only tested on
+Linux as it uses a shared PicoSAT library only provided for linux-x86-64 architecture. This will
+be addressed soon (hopefully!).
 
 ```
 > java -jar rio
