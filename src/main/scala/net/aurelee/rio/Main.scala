@@ -41,10 +41,6 @@ object Main {
         // Magic here
         val result = Reasoner(input)(rioConfig)
         result match {
-          case Reasoner.OutputAccepted =>
-            println(s"% SZS status Theorem for $inputFileName")
-          case Reasoner.OutputRejected =>
-            println(s"% SZS status CounterTheorem for $inputFileName")
           case Reasoner.OutputGenerated(output) =>
             println(s"% SZS status Success for $inputFileName")
             println(s"% SZS output start ListOfFormulae for $inputFileName")
@@ -52,13 +48,13 @@ object Main {
               println(f.pretty)
             }
             println(s"% SZS output end ListOfFormulae for $inputFileName")
-          case Reasoner.MixedResult(accepted, _) =>
-            println(s"% SZS status WeakerConclusion for $inputFileName: Only some of the conjectured outputs are indeed in the out set.")
-            println(s"% SZS output start ListOfFormulae for $inputFileName")
-            accepted.foreach { f =>
-              println(f.pretty)
+          case Reasoner.OutputVerified(accepted, rejected) =>
+            accepted.foreach { case (name, _) =>
+              println(s"% SZS status Theorem for $inputFileName: $name")
             }
-            println(s"% SZS output end ListOfFormulae for $inputFileName")
+            rejected.foreach { case (name, _) =>
+              println(s"% SZS status CounterSatisfiable for $inputFileName: $name")
+            }
         }
       } catch {
         case e: IllegalArgumentException =>

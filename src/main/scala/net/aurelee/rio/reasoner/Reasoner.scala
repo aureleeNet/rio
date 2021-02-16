@@ -6,10 +6,8 @@ import net.aurelee.rio.reasoner
 
 object Reasoner {
   sealed abstract class RioResult
-  case object OutputAccepted extends RioResult
-  case object OutputRejected extends RioResult
   case class OutputGenerated(output: Seq[Formula]) extends RioResult
-  case class MixedResult(accepted: Seq[Formula], rejected: Seq[Formula]) extends RioResult
+  case class OutputVerified(accepted: Seq[(String, Formula)], rejected: Seq[(String, Formula)]) extends RioResult
 
   final def apply(problem: Seq[TPTP.AnnotatedFormula])(config: RioConfig): RioResult = {
     println(s"% Use configuration: ${config.pretty}")
@@ -52,12 +50,7 @@ object Reasoner {
     } else {
       import net.aurelee.rio.sat.consequence
       val (accepted, rejected) = conjectureFormulas.partition(cf => consequence(outputBasis, cf._2))
-      if (accepted.isEmpty) OutputRejected
-      else if (rejected.isEmpty) OutputAccepted
-      else {
-        MixedResult(accepted.values.toSeq, rejected.values.toSeq)
-      }
-
+      OutputVerified(accepted.toSeq, rejected.toSeq)
     }
   }
 }
