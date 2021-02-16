@@ -119,16 +119,20 @@ Alternatively, semantics parameters can also be passed using command-line argume
 
 `rio` gives SZS status results as follows:
 
-+ SZS status Theorem if the problem contains conjectured outputs (formulas of role `conjecture`) and
-  every conjectured output is indeed in the output set.
-+ SZS status Unsatisfiable if the problem contains conjectured outputs (formulas of role `conjecture`) and
-  no conjectured output is indeed in the output set. 
-+ SZS status WeakerConclusion if the problem contains conjectured outputs (formulas of role `conjecture`) and
-  only some of the conjectured outputs are indeed in the output set.
 + SZS status Success if the problem does not contain conjectured outputs (formulas of role `conjecture`).
-  In this case, a SZS result of type ListOfFormulae containing the finite base of the output set is given. 
+  In this case, a SZS result of type ListOfFormulae containing the finite base of the output set is given.
++ SZS status Theorem if the problem contains a conjectured output (a formula of role `conjecture`) and
+  the conjectured output is indeed in the output set.
++ SZS status CounterSatisfiable if the problem contains a conjectured output (a formula of role `conjecture`) and
+  the conjectured output is not in the output set.
++ If the problem contains multiple conjectures, one output (Theorem or CounterSatisfiable)
+  is given for each conjecture.
 
 ### Semantics specification
+
+A problem's semantics is specified using a dedicated `logic` formula, as
+foreseen in the currently explored extension of the TPTP library, cf.
+http://tptp.org/TPTP/Proposals/LogicSpecification.html for details.
 
 Parameter | Value | Description
 ------- | ------ | --------
@@ -175,16 +179,13 @@ Then you run `rio` via:
 ```
 ... producing the following output:
 ```
-% SZS status WeakerConclusion for out1.p: Only some of the conjectured outputs are indeed in the out set.
-% SZS output start ListOfFormulae for out1.p
-~ telling
-% SZS output end ListOfFormulae for out1.p
+% SZS status Theorem for src/test/resources/out1.p: c1
+% SZS status CounterSatisfiable for src/test/resources/out1.p: c2
 ```
 
 As can be seen, only one of the conjectures (only `c1`) is indeed detached.
-As a consequence, SZS status WeakerConclusion is returned, together with an output
-list of all correctly conjectured outputs. If every conjectures output can indeed be
-detached, SZS status Theorem is returned.
+As a consequence, SZS status Theorem is given for `c1` but SZS status
+CounterSatisfiable is given for conjecture `c2`.
 
 ### Use case 2: Generate set of obligations
 
@@ -254,6 +255,11 @@ This problem file gives a consistent output set as follows:
 % SZS output end ListOfFormulae for out3-constrained.p
 ```
  
+## Usage as library/API
+
+`rio`'s reasoning procedure can also be invoked by adding the .jar file to
+your project's classpath and calling the `Reasoner.apply` method directly.
+Documentation will be available soon.
  
 ## License
 
