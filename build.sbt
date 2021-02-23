@@ -3,7 +3,7 @@ lazy val parserLib = ProjectRef(uri("git://github.com/leoprover/scala-tptp-parse
 lazy val rio = (project in file("."))
   .settings(
     name := "rio",
-    version := "1.0",
+    version := "1.1",
     description := "A reasoner for Input/Output logics",
     organization := "net.aurelee",
     scalaVersion := "2.13.4",
