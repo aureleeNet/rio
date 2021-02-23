@@ -121,6 +121,7 @@ package object core {
           case (_, PLTop) => PLTop
           case (PLBottom, _) => simpRight
           case (_, PLBottom) => simpLeft
+          case (x, y) if x == y => x
           case _ => mkDisj(simpLeft, simpRight)
         }
       case PLConj(left, right) =>
@@ -131,6 +132,7 @@ package object core {
           case (_, PLTop) => simpLeft
           case (PLBottom, _) => PLBottom
           case (_, PLBottom) => PLBottom
+          case (x, y) if x == y => x
           case _ => mkConj(simpLeft, simpRight)
         }
       case _ => formula
