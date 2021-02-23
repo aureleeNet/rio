@@ -1,5 +1,5 @@
 # rio: Reasoner for Input/Output Logics
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4540273.svg)](https://doi.org/10.5281/zenodo.4540273)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4540272.svg)](https://doi.org/10.5281/zenodo.4540272)
 
 
 Input/Output (I/O) logics have been devised by D. Makinson and L. van der Torre [1]
