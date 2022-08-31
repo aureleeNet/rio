@@ -2,7 +2,6 @@ package net.aurelee.rio
 
 import net.aurelee.rio.core.{Formula, PLNeg, PLProp, mkConjs, mkDisjs}
 
-import java.io.File
 import scala.collection.mutable
 import scala.sys.process.ProcessLogger
 
@@ -21,6 +20,7 @@ package object sat {
     import net.aurelee.rio.core.{PLNeg, PLProp, PLTop, PLBottom}
     import scala.collection.mutable
 
+//    println(s"cnfToDimacsClause of cnf = ${cnf.pretty}")
     if (cnf == PLTop) Seq.empty
     else if (cnf == PLBottom) Seq(Seq.empty)
     else {
@@ -44,6 +44,7 @@ package object sat {
   }
 
   final def cnfToDimacsProblem(symbolMap: Option[Map[String, Int]])(cnf: Formula): String = {
+//    println(s"cnfToDimacsProblem cnf = ${cnf.pretty}")
     val sb: mutable.StringBuilder = new mutable.StringBuilder()
     val namingMap = symbolMap match {
       case Some(value) => value
@@ -100,29 +101,30 @@ package object sat {
     solver.solve()
   }
 
-  final def allMUSes(formula: Formula)(implicit solver: PicoSAT): Seq[Formula] = {
+  final def allMUSes(cnfInput: Seq[Seq[Formula]])(implicit solver: PicoSAT): Seq[Seq[Seq[Formula]]] = {
     import net.aurelee.rio.core.{cnf, simp}
-    val clausified = cnf(formula)
-    val simplified = simp(clausified)
     // translate to Dimacs
-    val symbolMap = simplified.symbols.zipWithIndex.toMap
+    val asFormula = mkConjs(cnfInput.map(mkDisjs))            // TODO: back-and-forth-translation ugly, pass as real CNF
+    val symbolMap = asFormula.symbols.zipWithIndex.toMap // TODO: Do in dimacs translation
     val reverseMap = symbolMap.map(_.swap) // works because symbolMap is injective
-    val dimacs = cnfToDimacsProblem(Some(symbolMap))(simplified)
+    val dimacs = cnfToDimacsProblem(Some(symbolMap))(asFormula)
     // run MUS enumeration tool
     val mustResult = runMUST(dimacs)
     val muses = MUSesFromDimacs(mustResult)
     // translate result file to Seq[Formula]
-    val result: Seq[Formula] = muses.map { mus =>
-      val clauses = mus.map { clause =>
-        val cl: Seq[Formula] = clause.map { lit =>
+    val result: Seq[Seq[Seq[Formula]]] = muses.map { mus =>
+//      val clauses =
+        mus.map { clause =>
+//        val cl: Seq[Formula] =
+          clause.map { lit =>
           (lit: @unchecked) match {
             case i if i > 0 => PLProp(reverseMap(i - 1))
             case i if i < 0 => PLNeg(PLProp(reverseMap(-i - 1)))
           }
         }
-        mkDisjs(cl)
+//        mkDisjs(cl)
       }
-      mkConjs(clauses)
+//      mkConjs(clauses)
     }
     result
   }
@@ -139,17 +141,20 @@ package object sat {
         tempOutputFile.toFile.deleteOnExit()
     // call MUST with input, wait for termination
     val process = scala.sys.process.Process.apply(musToolFile, Seq(tempDimacsFile.toAbsolutePath.toString, "-o", tempOutputFile.toAbsolutePath.toString))
-    process ! ProcessLogger(line => (), err => println(err)) // ignore stdout
+    process ! ProcessLogger(_ => (), err => println(err)) // ignore stdout
     // read result file
     val toolOutput = Files.readString(tempOutputFile)
     toolOutput
   }
   private[this] final def MUSesFromDimacs(musDimacs: String): Seq[Seq[Seq[Int]]] = {
-    val musEntries = musDimacs.split("\n\n")
-    musEntries.map{ entry =>
-      val lines = entry.split("\n")
-      val clauses = lines.tail.tail.toSeq // drop first two lines: "MUS #i" and "p cnf k j"
-      clauses.map(cl => cl.split(" ").init.map(_.toInt).toSeq)
+    if (musDimacs.isEmpty) Seq.empty
+    else {
+      val musEntries = musDimacs.split("\n\n").toSeq
+      musEntries.map { entry =>
+        val lines = entry.split("\n")
+        val clauses = lines.tail.tail.toSeq // drop first two lines: "MUS #i" and "p cnf k j"
+        clauses.map(cl => cl.split(" ").init.map(_.toInt).toSeq)
+      }
     }
   }
 

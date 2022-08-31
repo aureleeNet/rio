@@ -16,7 +16,7 @@ package object rio {
     import reasoner.{Out1, Out2, Out3, Out4}
     spec match {
       case TPTP.THFAnnotated(_, "logic", THF.Logical(f), _) => f match {
-        case THF.BinaryFormula(THF.:=, THF.FunctionTerm("$iol", Seq()), THF.Tuple(elements)) if elements.nonEmpty =>
+        case THF.BinaryFormula(THF.==, THF.FunctionTerm("$iol", Seq()), THF.Tuple(elements)) if elements.nonEmpty =>
           val parameterMap = tupleElementsToMap(elements)
           if (parameterMap.isDefinedAt("$output")) {
             val throughput = parameterMap.get("$throughput").fold(false) {
@@ -57,7 +57,7 @@ package object rio {
     import scala.collection.mutable
     val resultMap: mutable.Map[String, TPTP.THF.Formula] = mutable.Map.empty
     tupleElements.foreach {
-      case THF.BinaryFormula(THF.:=, THF.FunctionTerm(key, Seq()), right) =>
+      case THF.BinaryFormula(THF.==, THF.FunctionTerm(key, Seq()), right) =>
         resultMap += (key -> right)
       case entry => throw new MalformedLogicSpecificationException(s"Malformed logic specification entry: ${entry.pretty}")
     }

@@ -84,6 +84,7 @@ object Main {
           error = true
         case e: Throwable =>
           println(s"% SZS status Error for $inputFileName: Unexpected error -- ${e.getMessage}")
+          e.printStackTrace(System.err)
           println("% This is considered an implementation error; please report this!")
           error = true
       } finally {

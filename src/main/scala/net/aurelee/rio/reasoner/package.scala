@@ -1,6 +1,7 @@
 package net.aurelee.rio
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, bodies, body, head, mkDisjs, mkImpl}
+import net.aurelee.rio.core.{Formula, Norm, OutOperator, body, head, mkImpl}
+import net.aurelee.rio.sat.allMUSes
 
 package object reasoner {
   import sat.globalPicoSATInstance
@@ -18,21 +19,39 @@ package object reasoner {
     norms.filter(n => consequence(input, body(n)))
   }
 
-  final def getBasicTriggeredNorms(input: Seq[Formula], norms: Seq[Norm]): Seq[Norm] = {
-    import sat.consequence
-    norms.filter { n =>
-      val compat = getCompatibleNorms(norms,n)
-      val compatBodies = bodies(compat)
-      val bigDisjunction = mkDisjs(compatBodies)
-      consequence(input, bigDisjunction)
+  final def getMinimallyWeaklyTriggeredSets(input: Seq[Formula], cnfOfNegatedBodies: Seq[Seq[Seq[Formula]]]): Seq[Seq[Seq[Formula]]] = {
+    import core._
+    val simpedCNFInput = simp(cnf(mkConjs(input)))
+    val cnfOfInput: Seq[Seq[Formula]] = simpedCNFInput match {
+      case PLTop => Seq.empty
+      case PLBottom => Seq(Seq.empty)
+      case rest => rest.conjs.map(_.disjs)
+    }
+//    val cnfOfInput: Seq[Seq[Formula]] = simp(cnf(mkConjs(input))).conjs.map(_.disjs)
+    val negatedBodiesInput = cnfOfNegatedBodies.flatten
+    val musInput = cnfOfInput.concat(negatedBodiesInput)
+    val muses = allMUSes(musInput)
+    // Filter from uses only those that come from negatedBodies
+    muses.map { mus =>
+      mus.intersect(negatedBodiesInput)
     }
   }
 
-  final def getCompatibleNorms(norms: Seq[Norm], n: Norm): Seq[Norm] = {
-    import net.aurelee.rio.sat.consequence
-    val h = head(n)
-    norms.filter(m => consequence(Seq(head(m)), h))
-  }
+//  final def getBasicTriggeredNorms(input: Seq[Formula], norms: Seq[Norm]): Seq[Norm] = {
+//    import sat.consequence
+//    norms.filter { n =>
+//      val compat = getCompatibleNorms(norms,n)
+//      val compatBodies = bodies(compat)
+//      val bigDisjunction = mkDisjs(compatBodies)
+//      consequence(input, bigDisjunction)
+//    }
+//  }
+
+//  final def getCompatibleNorms(norms: Seq[Norm], n: Norm): Seq[Norm] = {
+//    import net.aurelee.rio.sat.consequence
+//    val h = head(n)
+//    norms.filter(m => consequence(Seq(head(m)), h))
+//  }
 
   final def maxFamily(outOperator: OutOperator,
                       input: Seq[Formula],
