@@ -1,6 +1,6 @@
 package net.aurelee.rio.reasoner
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, PLBottom, PLConj, PLDisj, PLFormula, cnf, interreduce, mkNeg, simp}
+import net.aurelee.rio.core.{Formula, Norm, OutOperator, PLBottom, PLConj, PLDisj, PLFormula, cnfFormulaToMultiset, cnf, interreduce, mkNeg}
 
 
 object Out2 extends OutOperator {
@@ -19,19 +19,25 @@ object Out2 extends OutOperator {
       // Transform list of norms to Map CNF[negated body] -> Heads
       val negatedBodyCNFToHead: mutable.Map[CNF, Seq[Head]] = mutable.Map.empty
       norms.foreach { case (body, head) =>
-        val simpCNFOfNegatedBody: CNF = simp(cnf(mkNeg(body))).conjs.map(_.disjs)
-        if (negatedBodyCNFToHead.isDefinedAt(simpCNFOfNegatedBody)) {
-          val value = negatedBodyCNFToHead(simpCNFOfNegatedBody)
-          negatedBodyCNFToHead += (simpCNFOfNegatedBody -> (value :+ head))
-        } else {
-          negatedBodyCNFToHead += (simpCNFOfNegatedBody -> Seq(head))
+        val simpCNFOfNegatedBody: CNF = cnfFormulaToMultiset(cnf(mkNeg(body)))
+        if (simpCNFOfNegatedBody == Seq.empty) { /* skip */ } // $true can never be part of a MUS
+        else {
+          if (negatedBodyCNFToHead.isDefinedAt(simpCNFOfNegatedBody)) {
+            val value = negatedBodyCNFToHead(simpCNFOfNegatedBody)
+            negatedBodyCNFToHead += (simpCNFOfNegatedBody -> (value :+ head))
+          } else {
+            negatedBodyCNFToHead += (simpCNFOfNegatedBody -> Seq(head))
+          }
         }
       }
-//      val negatedBodyCNFToHead: Map[CNF, Seq[Head]] = ???
+//      println(s"negatedBodyCNFToHead = ${negatedBodyCNFToHead.toString()}")
       val negatedBodiesCNF: Seq[CNF] = negatedBodyCNFToHead.keys.toSeq
+//      println(s"negatedBodiesCNF = ${negatedBodiesCNF.toString()}")
       val minimallyWeaklyTriggeredSets: Seq[CNF] = getMinimallyWeaklyTriggeredSets(input, negatedBodiesCNF)
-      val weakOutputs = minimallyWeaklyTriggeredSets.map { mus =>
-        val triggeredCNFs = negatedBodiesCNF.filter( cnf => cnf.forall(mus.contains) )
+      val weakOutputs = minimallyWeaklyTriggeredSets.map { weaklyTriggeredSet =>
+//        println(s" weaklyTriggeredSet = ${weaklyTriggeredSet.toString()}")
+        val triggeredCNFs = negatedBodiesCNF.filter( cnf => cnf.forall(x => weaklyTriggeredSet.contains(x)) )
+//        println(s"triggeredCNFs = ${triggeredCNFs.toString()}")
         val intermediate = triggeredCNFs.map { cnf =>
           val heads = negatedBodyCNFToHead(cnf)
           heads.reduce(PLConj)
@@ -40,19 +46,6 @@ object Out2 extends OutOperator {
         weakOutput
       }
       interreduce(weakOutputs)
-
-//      val normBodies = bodies(norms)
-//      val negatedNormBodies: Seq[Formula] = normBodies.map(PLNeg)
-//      val clauseSetForMUSEnumeration = input.concat(negatedNormBodies)
-//
-//      val clauses = dnf(mkConjs(input)).disjs.map(_.conjs)
-//      val partialResults = clauses.map { cl =>
-//        val triggered = getBasicTriggeredNorms(cl, norms)
-//        val triggeredHeads = heads(triggered)
-//        mkConjs(interreduce(triggeredHeads))
-//      }
-//      val bigDisjunction = mkDisjs(partialResults)
-//      interreduce(Seq(bigDisjunction))
     }
   }
 }

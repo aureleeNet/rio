@@ -167,6 +167,18 @@ package object core {
     }
   }
 
+  final def cnfFormulaToMultiset(cnf: Formula): Seq[Seq[Formula]] = {
+    import scala.collection.mutable
+    val result: mutable.ListBuffer[Seq[Formula]] = mutable.ListBuffer.empty
+    val clauses: Seq[Formula] = simp(cnf).conjs
+    clauses.foreach {
+      case PLTop => /* skip */
+      case PLBottom => result.append(Seq.empty)
+      case cl => result.append(cl.disjs)
+    }
+    result.toSeq
+  }
+
   final def interpretNorm(formula: TPTP.THF.Formula): Norm = {
     import TPTP.THF.Tuple
     formula match {

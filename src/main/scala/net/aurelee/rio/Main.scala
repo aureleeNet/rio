@@ -59,6 +59,7 @@ object Main {
       } catch {
         case e: IllegalArgumentException =>
           println(e.getMessage)
+          e.printStackTrace(System.err)
           usage()
           error = true
         case e: FileNotFoundException =>

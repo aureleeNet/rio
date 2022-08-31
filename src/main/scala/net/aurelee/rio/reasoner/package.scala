@@ -1,6 +1,6 @@
 package net.aurelee.rio
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, body, head, mkImpl}
+import net.aurelee.rio.core.{Formula, Norm, OutOperator, body, head, mkImpl, mkConjs, cnfFormulaToMultiset, cnf}
 import net.aurelee.rio.sat.allMUSes
 
 package object reasoner {
@@ -20,20 +20,15 @@ package object reasoner {
   }
 
   final def getMinimallyWeaklyTriggeredSets(input: Seq[Formula], cnfOfNegatedBodies: Seq[Seq[Seq[Formula]]]): Seq[Seq[Seq[Formula]]] = {
-    import core._
-    val simpedCNFInput = simp(cnf(mkConjs(input)))
-    val cnfOfInput: Seq[Seq[Formula]] = simpedCNFInput match {
-      case PLTop => Seq.empty
-      case PLBottom => Seq(Seq.empty)
-      case rest => rest.conjs.map(_.disjs)
-    }
-//    val cnfOfInput: Seq[Seq[Formula]] = simp(cnf(mkConjs(input))).conjs.map(_.disjs)
+    val cnfOfInput: Seq[Seq[Formula]] = cnfFormulaToMultiset(cnf(mkConjs(input))) //simp(cnf(mkConjs(input))).conjs.map(_.disjs)
     val negatedBodiesInput = cnfOfNegatedBodies.flatten
     val musInput = cnfOfInput.concat(negatedBodiesInput)
     val muses = allMUSes(musInput)
-    // Filter from uses only those that come from negatedBodies
     muses.map { mus =>
-      mus.intersect(negatedBodiesInput)
+      //  if input is completely contained in MUS then everything follows, i.e., return empty MUS.
+      if (cnfOfInput.nonEmpty && cnfOfInput.forall(mus.contains)) {
+        Seq.empty
+      } else mus.intersect(negatedBodiesInput) // Filter from muses only those that come from negatedBodies (might not be distinct from input, though)
     }
   }
 

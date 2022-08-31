@@ -1,6 +1,6 @@
 package net.aurelee.rio
 
-import net.aurelee.rio.core.{Formula, PLNeg, PLProp, mkConjs, mkDisjs}
+import net.aurelee.rio.core.{Formula, PLNeg, PLProp, PLTop, PLBottom, mkConjs, mkDisjs, mkNeg, mkImpl}
 
 import scala.annotation.unused
 import scala.collection.mutable
@@ -18,30 +18,27 @@ package object sat {
   }
 
   final def cnfToDimacsClauses(symbolMap: Option[Map[String, Int]])(cnf: Formula): Seq[Seq[Int]] = {
-    import net.aurelee.rio.core.{PLNeg, PLProp, PLTop, PLBottom}
-    import scala.collection.mutable
-
 //    println(s"cnfToDimacsClause of cnf = ${cnf.pretty}")
-    if (cnf == PLTop) Seq.empty
-    else if (cnf == PLBottom) Seq(Seq.empty)
-    else {
-      val result: mutable.ListBuffer[Seq[Int]] = mutable.ListBuffer.empty
-      val clauses = cnf.conjs
-      val namingMap = symbolMap match {
-        case Some(value) => value
-        case None => cnf.symbols.zipWithIndex.toMap
-      }
-      clauses.foreach { cl =>
+    val result: mutable.ListBuffer[Seq[Int]] = mutable.ListBuffer.empty
+    val clauses = cnf.conjs
+    val namingMap = symbolMap match {
+      case Some(value) => value
+      case None => cnf.symbols.zipWithIndex.toMap
+    }
+    clauses.foreach {
+      case PLTop => /* skip */
+      case PLBottom => result.append(Seq.empty)
+      case cl =>
         val lits = cl.disjs
-        val translatedLits = lits.map { l => (l: @unchecked) match {
-          case PLNeg(PLProp(name)) => -(namingMap(name)+1)
-          case PLProp(name) => namingMap(name)+1
-        }
+        val translatedLits = lits.map { l =>
+          (l: @unchecked) match {
+            case PLNeg(PLProp(name)) => -(namingMap(name) + 1)
+            case PLProp(name) => namingMap(name) + 1
+          }
         }
         result.append(translatedLits)
-      }
-      result.toSeq
     }
+    result.toSeq
   }
 
   final def cnfToDimacsProblem(symbolMap: Option[Map[String, Int]])(cnf: Formula): String = {
@@ -72,22 +69,18 @@ package object sat {
     solver.state == PicoSAT.UNSAT
   }
   final def consistent(formulas: Iterable[Formula])(implicit solver: PicoSAT): Boolean = {
-    import net.aurelee.rio.core.mkConjs
     val conjunct = mkConjs(formulas)
     satisfiable(conjunct)(solver)
   }
   final def consequence(assumptions: Iterable[Formula], conjecture: Formula)(implicit solver: PicoSAT): Boolean = {
-    import net.aurelee.rio.core.{mkConjs, mkNeg}
     val formulas = Iterable.concat(assumptions, Seq(mkNeg(conjecture)))
     unsatisfiable(mkConjs(formulas))(solver)
   }
   final def tautology(formula: Formula)(implicit solver: PicoSAT): Boolean = {
-    import net.aurelee.rio.core.mkNeg
     unsatisfiable(mkNeg(formula))(solver)
   }
   @unused
   final def equivalent(f: Formula, g: Formula)(implicit solver: PicoSAT): Boolean = {
-    import net.aurelee.rio.core.{mkImpl, mkConjs}
     val impl = mkImpl(f, g)
     val lpmi = mkImpl(g, f)
     tautology(mkConjs(Seq(impl, lpmi)))(solver)
@@ -114,18 +107,14 @@ package object sat {
     val muses = MUSesFromDimacs(mustResult)
     // translate result file to Seq[Formula]
     val result: Seq[Seq[Seq[Formula]]] = muses.map { mus =>
-//      val clauses =
         mus.map { clause =>
-//        val cl: Seq[Formula] =
           clause.map { lit =>
           (lit: @unchecked) match {
             case i if i > 0 => PLProp(reverseMap(i - 1))
             case i if i < 0 => PLNeg(PLProp(reverseMap(-i - 1)))
           }
         }
-//        mkDisjs(cl)
       }
-//      mkConjs(clauses)
     }
     result
   }
@@ -148,13 +137,20 @@ package object sat {
     toolOutput
   }
   private[this] final def MUSesFromDimacs(musDimacs: String): Seq[Seq[Seq[Int]]] = {
+//    println(s"MUSesFromDimacs musDimacs=$musDimacs")
     if (musDimacs.isEmpty) Seq.empty
     else {
       val musEntries = musDimacs.split("\n\n").toSeq
       musEntries.map { entry =>
         val lines = entry.split("\n")
         val clauses = lines.tail.tail.toSeq // drop first two lines: "MUS #i" and "p cnf k j"
-        clauses.map(cl => cl.split(" ").init.map(_.toInt).toSeq)
+        clauses.map { clause =>
+          // .init drops the trailing 0 in each clause
+          // filter(_.nonEmpty) is required because the split may contain empty strings
+          val lits = clause.init.trim.split(" ").toSeq.filter(_.nonEmpty)
+          if (lits.isEmpty) Seq.empty
+          else lits.map(_.toInt)
+        }
       }
     }
   }
