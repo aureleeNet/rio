@@ -1,5 +1,5 @@
 thf(semantics, logic, (
-    $iol := [ $output := $out4 ] )).
+    $iol == [ $output == $out4 ] )).
 
 thf(norm1, axiom, [parking, ticket | fine]).
 thf(norm2, axiom, [ticket, pay]).
