@@ -1,13 +1,12 @@
 package net.aurelee.rio.reasoner
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, PLBottom, PLConj, PLDisj, PLFormula, PLNeg, bodies, cnf, dnf, heads, interreduce, mkConjs, mkDisjs, mkNeg, simp}
+import net.aurelee.rio.core.{Formula, Norm, OutOperator, PLBottom, PLConj, PLDisj, PLFormula, cnf, interreduce, mkNeg, simp}
 
 
 object Out2 extends OutOperator {
   private type CNF = Seq[Clause]
   private type Clause = Seq[Literal]
   private type Literal = Formula
-  private type Body = Formula
   private type Head = Formula
 
 

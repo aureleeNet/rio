@@ -2,6 +2,7 @@ package net.aurelee.rio
 
 import net.aurelee.rio.core.{Formula, PLNeg, PLProp, mkConjs, mkDisjs}
 
+import scala.annotation.unused
 import scala.collection.mutable
 import scala.sys.process.ProcessLogger
 
@@ -84,6 +85,7 @@ package object sat {
     import net.aurelee.rio.core.mkNeg
     unsatisfiable(mkNeg(formula))(solver)
   }
+  @unused
   final def equivalent(f: Formula, g: Formula)(implicit solver: PicoSAT): Boolean = {
     import net.aurelee.rio.core.{mkImpl, mkConjs}
     val impl = mkImpl(f, g)
@@ -102,7 +104,6 @@ package object sat {
   }
 
   final def allMUSes(cnfInput: Seq[Seq[Formula]])(implicit solver: PicoSAT): Seq[Seq[Seq[Formula]]] = {
-    import net.aurelee.rio.core.{cnf, simp}
     // translate to Dimacs
     val asFormula = mkConjs(cnfInput.map(mkDisjs))            // TODO: back-and-forth-translation ugly, pass as real CNF
     val symbolMap = asFormula.symbols.zipWithIndex.toMap // TODO: Do in dimacs translation
