@@ -21,32 +21,17 @@ package object reasoner {
 
   final def getMinimallyWeaklyTriggeredSets(input: Seq[Formula], cnfOfNegatedBodies: Seq[Seq[Seq[Formula]]]): Seq[Seq[Seq[Formula]]] = {
     val cnfOfInput: Seq[Seq[Formula]] = cnfFormulaToMultiset(cnf(mkConjs(input))) //simp(cnf(mkConjs(input))).conjs.map(_.disjs)
+//    println(s"cnfOfInput = ${cnfOfInput.toString()}")
     val negatedBodiesInput = cnfOfNegatedBodies.flatten
     val musInput = cnfOfInput.concat(negatedBodiesInput)
     val muses = allMUSes(musInput)
     muses.map { mus =>
-      //  if input is completely contained in MUS then everything follows, i.e., return empty MUS.
-      if (cnfOfInput.nonEmpty && cnfOfInput.forall(mus.contains)) {
+      //  if input is identical to MUS then everything follows, i.e., return empty MUS.
+      if (cnfOfInput.nonEmpty && cnfOfInput.forall(mus.contains) && mus.forall(cnfOfInput.contains)) {
         Seq.empty
       } else mus.intersect(negatedBodiesInput) // Filter from muses only those that come from negatedBodies (might not be distinct from input, though)
     }
   }
-
-//  final def getBasicTriggeredNorms(input: Seq[Formula], norms: Seq[Norm]): Seq[Norm] = {
-//    import sat.consequence
-//    norms.filter { n =>
-//      val compat = getCompatibleNorms(norms,n)
-//      val compatBodies = bodies(compat)
-//      val bigDisjunction = mkDisjs(compatBodies)
-//      consequence(input, bigDisjunction)
-//    }
-//  }
-
-//  final def getCompatibleNorms(norms: Seq[Norm], n: Norm): Seq[Norm] = {
-//    import net.aurelee.rio.sat.consequence
-//    val h = head(n)
-//    norms.filter(m => consequence(Seq(head(m)), h))
-//  }
 
   final def maxFamily(outOperator: OutOperator,
                       input: Seq[Formula],
