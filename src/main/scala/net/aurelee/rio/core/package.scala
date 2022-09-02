@@ -2,7 +2,7 @@ package net.aurelee.rio
 
 import leo.datastructures.TPTP
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 
 package object core {
   trait Pretty {
@@ -11,13 +11,27 @@ package object core {
 
   type Formula = PLFormula
   type Norm = (Formula, Formula)
+  /** Multiset-based clause type.
+   * contract: all formulas are literals
+   */
+  type Clause = Seq[Formula]
+  /**
+   * Multiset-based CNF type.
+   * To be interpreted as conjunction of disjunctive clauses.
+   */
+  type CNF = Seq[Clause]
+  /**
+   * Multiset-based CNF type.
+   * To be interpreted as disjunction of conjunctive clauses.
+   */
+  @unused type DNF = Seq[Clause]
 
-  final def prettyNorm(norm: Norm): String = s"[${norm._1.pretty} , ${norm._2.pretty}]"
+  @unused final def prettyNorm(norm: Norm): String = s"[${norm._1.pretty} , ${norm._2.pretty}]"
 
   @inline final def head(norm: Norm): Formula = norm._2
   @inline final def heads(norms: Seq[Norm]): Seq[Formula] = norms.map(head)
   @inline final def body(norm: Norm): Formula = norm._1
-  @inline final def bodies(norms: Seq[Norm]): Seq[Formula] = norms.map(body)
+  @inline @unused final def bodies(norms: Seq[Norm]): Seq[Formula] = norms.map(body)
 
   final def isUnitClause(clause: Formula): Boolean = {
     clause match {
@@ -80,7 +94,8 @@ package object core {
       case _ => formula
     }
   }
-  @inline final def dnf(formula: Formula): Formula = dnf0(nnf(formula))
+
+  @inline @unused final def dnf(formula: Formula): Formula = dnf0(nnf(formula))
   private[this] final def dnf0(formula: Formula): Formula = {
     formula match {
       case PLConj(PLDisj(ll, lr), r) =>
@@ -167,7 +182,7 @@ package object core {
     }
   }
 
-  final def cnfFormulaToMultiset(cnf: Formula): Seq[Seq[Formula]] = {
+  final def cnfFormulaToMultiset(cnf: Formula): CNF = {
     import scala.collection.mutable
     val result: mutable.ListBuffer[Seq[Formula]] = mutable.ListBuffer.empty
     val clauses: Seq[Formula] = simp(cnf).conjs
