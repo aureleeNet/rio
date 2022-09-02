@@ -1,15 +1,11 @@
 package net.aurelee.rio.reasoner
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, PLBottom, PLConj, PLDisj, PLFormula, cnfFormulaToMultiset, cnf, interreduce, mkNeg}
+import net.aurelee.rio.core.{CNF, Formula, Norm, Head}
+import net.aurelee.rio.core.OutOperator
+import net.aurelee.rio.core.{cnf, cnfFormulaToMultiset, interreduce, mkConjs, mkDisjs, mkNeg, heads}
 
 
 object Out2 extends OutOperator {
-  private type CNF = Seq[Clause]
-  private type Clause = Seq[Literal]
-  private type Literal = Formula
-  private type Head = Formula
-
-
   override final def name: String = "out2"
   override final def apply(norms: Seq[Norm], input: Seq[Formula], throughput: Boolean): Seq[Formula] = {
     if (throughput) {
@@ -36,14 +32,20 @@ object Out2 extends OutOperator {
       val minimallyWeaklyTriggeredSets: Seq[CNF] = getMinimallyWeaklyTriggeredSets(input, negatedBodiesCNF)
       val weakOutputs = minimallyWeaklyTriggeredSets.map { weaklyTriggeredSet =>
 //        println(s" weaklyTriggeredSet = ${weaklyTriggeredSet.toString()}")
-        val triggeredCNFs = negatedBodiesCNF.filter( cnf => cnf.forall(x => weaklyTriggeredSet.contains(x)) )
-//        println(s"triggeredCNFs = ${triggeredCNFs.toString()}")
-        val intermediate = triggeredCNFs.map { cnf =>
-          val heads = negatedBodyCNFToHead(cnf)
-          heads.reduce(PLConj)
+        if (weaklyTriggeredSet.isEmpty) {
+          // then the input is inconsistent and everything is triggered
+          mkConjs(heads(norms))
+        } else {
+          // collect heads from weakly triggered norms
+          val triggeredCNFs = negatedBodiesCNF.filter(cnf => cnf.forall(x => weaklyTriggeredSet.contains(x)))
+          //        println(s"triggeredCNFs = ${triggeredCNFs.toString()}")
+          val weaklyTriggeredNormHeads = triggeredCNFs.map { cnf =>
+            val heads = negatedBodyCNFToHead(cnf)
+            mkConjs(heads)
+          }
+          val weakOutput = mkDisjs(weaklyTriggeredNormHeads)
+          weakOutput
         }
-        val weakOutput = intermediate.foldLeft(PLBottom:PLFormula)(PLDisj)
-        weakOutput
       }
       interreduce(weakOutputs)
     }

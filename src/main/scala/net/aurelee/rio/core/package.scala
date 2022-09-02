@@ -10,7 +10,9 @@ package object core {
   }
 
   type Formula = PLFormula
-  type Norm = (Formula, Formula)
+  type Head = Formula
+  type Body = Formula
+  type Norm = (Body, Head)
   /** Multiset-based clause type.
    * contract: all formulas are literals
    */
@@ -28,10 +30,10 @@ package object core {
 
   @unused final def prettyNorm(norm: Norm): String = s"[${norm._1.pretty} , ${norm._2.pretty}]"
 
-  @inline final def head(norm: Norm): Formula = norm._2
-  @inline final def heads(norms: Seq[Norm]): Seq[Formula] = norms.map(head)
-  @inline final def body(norm: Norm): Formula = norm._1
-  @inline @unused final def bodies(norms: Seq[Norm]): Seq[Formula] = norms.map(body)
+  @inline final def head(norm: Norm): Head = norm._2
+  @inline final def heads(norms: Seq[Norm]): Seq[Head] = norms.map(head)
+  @inline final def body(norm: Norm): Body = norm._1
+  @inline @unused final def bodies(norms: Seq[Norm]): Seq[Body] = norms.map(body)
 
   final def isUnitClause(clause: Formula): Boolean = {
     clause match {

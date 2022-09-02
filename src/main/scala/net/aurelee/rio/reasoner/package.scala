@@ -1,7 +1,8 @@
 package net.aurelee.rio
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, body, head, mkImpl, mkConjs, cnfFormulaToMultiset, cnf}
-import net.aurelee.rio.sat.allMUSes
+import net.aurelee.rio.core.{Formula, Norm, CNF, OutOperator}
+import net.aurelee.rio.core.{body, head, mkImpl, mkConjs, cnfFormulaToMultiset, cnf}
+import net.aurelee.rio.sat.{consequence, consistent, allMUSes}
 
 package object reasoner {
   import sat.globalPicoSATInstance
@@ -15,12 +16,11 @@ package object reasoner {
   }
 
   final def getDirectlyTriggeredNorms(input: Seq[Formula], norms: Seq[Norm]): Seq[Norm] = {
-    import sat.consequence
     norms.filter(n => consequence(input, body(n)))
   }
 
-  final def getMinimallyWeaklyTriggeredSets(input: Seq[Formula], cnfOfNegatedBodies: Seq[Seq[Seq[Formula]]]): Seq[Seq[Seq[Formula]]] = {
-    val cnfOfInput: Seq[Seq[Formula]] = cnfFormulaToMultiset(cnf(mkConjs(input))) //simp(cnf(mkConjs(input))).conjs.map(_.disjs)
+  final def getMinimallyWeaklyTriggeredSets(input: Seq[Formula], cnfOfNegatedBodies: Seq[CNF]): Seq[CNF] = {
+    val cnfOfInput: CNF = cnfFormulaToMultiset(cnf(mkConjs(input)))
 //    println(s"cnfOfInput = ${cnfOfInput.toString()}")
     val negatedBodiesInput = cnfOfNegatedBodies.flatten
     val musInput = cnfOfInput.concat(negatedBodiesInput)
@@ -38,7 +38,6 @@ package object reasoner {
                       norms: Seq[Norm],
                       constraints: Seq[Formula],
                       throughput: Boolean): Seq[Seq[Norm]] = {
-    import net.aurelee.rio.sat.consistent
     var normsSets: Seq[Seq[Norm]] = Vector(norms)
     var result: Seq[Seq[Norm]] = Vector.empty
     while(normsSets.nonEmpty) {
