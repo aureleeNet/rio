@@ -114,7 +114,7 @@ differs from the TPTP standard (see below), and the problem needs to contain a l
 of the form 
 
 ```
-thf(<name>, logic, $iol := [<parameter> := <value>, ...]).
+thf(<name>, logic, $iol == [<parameter> == <value>, ...]).
 ```
 
 Alternatively, semantics parameters can also be passed using command-line arguments.
@@ -136,21 +136,20 @@ A problem's semantics is specified using a dedicated `logic` formula, as
 foreseen in the currently explored extension of the TPTP library, cf.
 http://tptp.org/TPTP/Proposals/LogicSpecification.html for details.
 
-Parameter | Value | Description
-------- | ------ | --------
-`$output` | One of `$out1`, `$out2`, `$out3`, `$out4` | Select the output operator (required parameter)
-`$throughput` | `$true` or `$false` | Enable/Disable throughout (default: `$false`)
-`$constrained` | `$credulous` or `$skeptical` | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset)
-`$constraints` | `[<list of formulas>]` | Set the constraints for constrained output. Ignored of `$constrained` is not set (default: unset).
+| Parameter      | Value                                     | Description                                                                                                        |
+|----------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `$output`      | One of `$out1`, `$out2`, `$out3`, `$out4` | Select the output operator (required parameter)                                                                    |
+| `$throughput`  | `$true` or `$false`                       | Enable/Disable throughout (default: `$false`)                                                                      |
+| `$constrained` | `$credulous` or `$skeptical`              | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset) |
+| `$constraints` | `[<list of formulas>]`                    | Set the constraints for constrained output. Ignored of `$constrained` is not set (default: unset).                 |
 
 ### Problem contents
 
-Formula role | Description
------------- | --------------
-`axiom` | Formulas of role `axiom` specify the conditional norms. Every axiom formula needs to be a pair/tuple of the form `[left,right]` where both left and right are formulas. `left` is the *body* of the norm (the condition) and `right` is the *head* of the norm (the obligation).
-`hypothesis` | Formulas of role `hypothesis` denote the inputs and are regular formulas
-`conjecture` | Formulas of role `conjecture` denote conjectured outputs. `rio` will check whether the formula is indeed in the output set.
-
+| Formula role | Description                                                                                                                                                                                                                                                                      |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `axiom`      | Formulas of role `axiom` specify the conditional norms. Every axiom formula needs to be a pair/tuple of the form `[left,right]` where both left and right are formulas. `left` is the *body* of the norm (the condition) and `right` is the *head* of the norm (the obligation). |
+| `hypothesis` | Formulas of role `hypothesis` denote the inputs and are regular formulas                                                                                                                                                                                                         |
+| `conjecture` | Formulas of role `conjecture` denote conjectured outputs. `rio` will check whether the formula is indeed in the output set.                                                                                                                                                      |
 
 ## Examples
 
@@ -163,7 +162,7 @@ are specified as THF formulas of role "conjecture":
 Let's say this content is stored in a file named `out1.p`:
 ```
 thf(semantics, logic, (
-    $iol := [ $output := $out1 ] )).
+    $iol == [ $output == $out1 ] )).
 
 thf(norm1, axiom, [$true, helping]).
 thf(norm2, axiom, [helping, telling]).
@@ -195,7 +194,7 @@ If no conjectures are contained in the problem file, e.g., as in ...
 
 ```
 thf(semantics, logic, (
-    $iol := [ $output := $out3 ] )).
+    $iol == [ $output == $out3 ] )).
 
 thf(norm1, axiom, [$true, helping]).
 thf(norm2, axiom, [helping, telling]).
@@ -231,9 +230,9 @@ specification:
 
 ```
 thf(semantics, logic, (
-    $iol := [ $output := $out3,
-              $constrained := $credulous,
-              $constraints := [~helping] ] )).
+    $iol == [ $output == $out3,
+              $constrained == $credulous,
+              $constraints == [~helping] ] )).
 
 thf(norm1, axiom, [$true, helping]).
 thf(norm2, axiom, [helping, telling]).
