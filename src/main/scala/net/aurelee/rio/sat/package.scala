@@ -1,6 +1,8 @@
 package net.aurelee.rio
 
-import net.aurelee.rio.core.{Formula, PLNeg, PLProp, PLTop, PLBottom, mkConjs, mkDisjs, mkNeg, mkImpl}
+import net.aurelee.rio.core.{CNF, Formula}
+import net.aurelee.rio.core.{PLNeg, PLProp}
+import net.aurelee.rio.core.{cnfFormulaToMultiset, mkConjs, mkImpl, mkNeg}
 
 import scala.annotation.unused
 import scala.collection.mutable
@@ -17,48 +19,50 @@ package object sat {
     target.toAbsolutePath.toString
   }
 
-  final def cnfToDimacsClauses(symbolMap: Option[Map[String, Int]])(cnf: Formula): Seq[Seq[Int]] = {
-//    println(s"cnfToDimacsClause of cnf = ${cnf.pretty}")
-    val result: mutable.ListBuffer[Seq[Int]] = mutable.ListBuffer.empty
-    val clauses = cnf.conjs
-    val namingMap = symbolMap match {
-      case Some(value) => value
-      case None => cnf.symbols.zipWithIndex.toMap
+  final def cnfToDimacsClauses(multisetCNF: CNF): (Seq[Seq[Int]], Map[String, Int]) = {
+    //    println(s"cnfToDimacsClause of cnf = ${cnf.pretty}")
+    val translatedClauses: mutable.ListBuffer[Seq[Int]] = mutable.ListBuffer.empty
+    val namingMap: mutable.Map[String, Int] = mutable.Map.empty
+
+    @inline def translateLiteral(literalName: String): Int = { // translate names to integers 0 ... k
+      namingMap.get(literalName) match {
+        case Some(value) => value
+        case None =>
+          val newValue = namingMap.size
+          namingMap.addOne(literalName -> newValue)
+          newValue
+      }
     }
-    clauses.foreach {
-      case PLTop => /* skip */
-      case PLBottom => result.append(Seq.empty)
-      case cl =>
-        val lits = cl.disjs
-        val translatedLits = lits.map { l =>
-          (l: @unchecked) match {
-            case PLNeg(PLProp(name)) => -(namingMap(name) + 1)
-            case PLProp(name) => namingMap(name) + 1
-          }
+
+    multisetCNF.foreach { clause => // iterate over clauses
+      val translatedLits = clause.map { literal =>
+        (literal: @unchecked) match {
+          case PLNeg(PLProp(name)) => // Negated because in dimacs negative literals are negative
+            val value = translateLiteral(name)
+            -(value + 1) // +1 because in dimacs we cannot use 0 as literal name
+          case PLProp(name) =>
+            val value = translateLiteral(name)
+            value + 1 // see above
         }
-        result.append(translatedLits)
+      }
+      translatedClauses.append(translatedLits)
     }
-    result.toSeq
+    (translatedClauses.toSeq, namingMap.toMap)
   }
 
-  final def cnfToDimacsProblem(symbolMap: Option[Map[String, Int]])(cnf: Formula): String = {
-//    println(s"cnfToDimacsProblem cnf = ${cnf.pretty}")
+  final def cnfToDimacsProblemString(multisetCNF: CNF): (String, Map[String, Int]) = {
+    //    println(s"cnfToDimacsProblem cnf = ${cnf.pretty}")
     val sb: mutable.StringBuilder = new mutable.StringBuilder()
-    val namingMap = symbolMap match {
-      case Some(value) => value
-      case None => cnf.symbols.zipWithIndex.toMap
-    }
-    val dimacsClauses = cnfToDimacsClauses(Some(namingMap))(cnf)
-    val varCount = cnf.symbols.size
+    val (dimacsClauses, symbolnameMap) = cnfToDimacsClauses(multisetCNF)
+    val varCount = symbolnameMap.size
     val clauseCount = dimacsClauses.size
     sb.append(s"p cnf $varCount $clauseCount\n")
     dimacsClauses foreach { clause =>
       sb.append(clause.mkString(" "))
       sb.append(s" 0\n")
     }
-    sb.init.toString // drop last newline
+    (sb.init.toString /*drop last newline*/, symbolnameMap)
   }
-
 
   final def satisfiable(formula: Formula)(implicit solver: PicoSAT): Boolean = {
     solveInternal(formula)(solver)
@@ -86,27 +90,25 @@ package object sat {
     tautology(mkConjs(Seq(impl, lpmi)))(solver)
   }
   private[this] final def solveInternal(formula: Formula)(solver: PicoSAT): Unit = {
-    import net.aurelee.rio.core.{cnf, simp}
+    import net.aurelee.rio.core.cnf
     val clausified = cnf(formula)
-    val simplified = simp(clausified)
+    val multisetCNF = cnfFormulaToMultiset(clausified)
 //    println(s"[PicoSAT] Check ${simplified.pretty}")
-    val picoSatInput = cnfToDimacsClauses(None)(simplified)
+    val (picoSatInput, _) = cnfToDimacsClauses(multisetCNF)
     solver.reset()
     picoSatInput.foreach(solver.addClause)
     solver.solve()
   }
 
-  final def allMUSes(cnfInput: Seq[Seq[Formula]])(implicit solver: PicoSAT): Seq[Seq[Seq[Formula]]] = {
+  final def allMUSes(multisetCNF: CNF)(implicit solver: PicoSAT): Seq[CNF] = {
     // translate to Dimacs
-    val asFormula = mkConjs(cnfInput.map(mkDisjs))            // TODO: back-and-forth-translation ugly, pass as real CNF
-    val symbolMap = asFormula.symbols.zipWithIndex.toMap // TODO: Do in dimacs translation
+    val (dimacs, symbolMap) = cnfToDimacsProblemString(multisetCNF)
     val reverseMap = symbolMap.map(_.swap) // works because symbolMap is injective
-    val dimacs = cnfToDimacsProblem(Some(symbolMap))(asFormula)
     // run MUS enumeration tool
     val mustResult = runMUST(dimacs)
     val muses = MUSesFromDimacs(mustResult)
     // translate result file to Seq[Formula]
-    val result: Seq[Seq[Seq[Formula]]] = muses.map { mus =>
+    val result: Seq[CNF] = muses.map { mus =>
         mus.map { clause =>
           clause.map { lit =>
           (lit: @unchecked) match {
