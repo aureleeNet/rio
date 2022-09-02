@@ -9,7 +9,7 @@ import java.io.FileNotFoundException
 
 object Main {
   final val name: String = "rio"
-  final val version: String = "1.1"
+  final val version: String = "1.2"
 
   private[this] var inputFileName = ""
   private[this] var outOperatorParameter: Option[String] = None
@@ -59,7 +59,6 @@ object Main {
       } catch {
         case e: IllegalArgumentException =>
           println(e.getMessage)
-          e.printStackTrace(System.err)
           usage()
           error = true
         case e: FileNotFoundException =>
