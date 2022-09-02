@@ -26,8 +26,8 @@ package object reasoner {
     val musInput = cnfOfInput.concat(negatedBodiesInput)
     val muses = allMUSes(musInput)
     muses.map { mus =>
-      //  if input is identical to MUS then everything follows, i.e., return empty MUS.
-      if (cnfOfInput.nonEmpty && cnfOfInput.forall(mus.contains) && mus.forall(cnfOfInput.contains)) {
+      //  if MUS is completely contained in input A then A is contradictory and everything follows, i.e., return empty MUS.
+      if (cnfOfInput.nonEmpty && mus.forall(cnfOfInput.contains)) {
         Seq.empty
       } else mus.intersect(negatedBodiesInput) // Filter from muses only those that come from negatedBodies (might not be distinct from input, though)
     }
