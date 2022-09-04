@@ -1,7 +1,10 @@
 DESTDIR ?= $(HOME)/bin
 default: all
 
-all: 
+all:
+		@echo Building dependency mustool
+		$(MAKE) -C ./mustool
+		cp ./mustool/must ./contrib/must
 		@echo Building rio ...
 		sbt assembly
 		mkdir bin -p
@@ -16,3 +19,5 @@ install:
 clean:
 		rm -rf target/
 		rm -rf bin/
+		$(MAKE) -C ./mustool clean
+		
