@@ -56,12 +56,32 @@ usage: rio [-o <operator>] [-p <parameter>] [-c <constraint>] <problem file>
 
 ### Building from sources
 
-In order to build `rio` from sources, you need the following software:
+In order to build `rio` from sources, you need the following software/packages:
 + Make
 + sbt (scala build tool)
 + JDK (≥ 11)
++ g++
++ zlib
++ must (installation described below)
 
-Unpack the source archive, and run `make`. If no error occurs, there should be a `bin`
+Unpack the source archive of `rio`.
+Download `must` from https://github.com/jar-ben/mustool/archive/refs/heads/master.zip and extract
+the contents of the archive into a folder called `mustool` (important!) as top-level directory within the `rio`
+folder. Your `rio` folder should now look like this (only directories shown):
+
+```
+.
+├── bin
+├── contrib
+├── demo
+├── examples
+├── mustool
+├── project
+├── src
+└── target
+```
+
+Run `make`. If no error occurs, there should be a `bin`
 directory containing the `rio.jar` file. Also, there is a convenience executable `rio`
 that just wraps the jar file with shell run script.
 
