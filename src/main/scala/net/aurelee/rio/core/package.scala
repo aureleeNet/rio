@@ -196,57 +196,68 @@ package object core {
     result.toSeq
   }
 
-  final def interpretNorm(formula: TPTP.THF.Formula): Norm = {
-    import TPTP.THF.Tuple
+  final def interpretNorm(formula: TPTP.TFF.Formula): Norm = {
+    import TPTP.TFF.{NonclassicalPolyaryFormula, NonclassicalLongOperator}
     formula match {
-      case Tuple(elements) if elements.size == 2 =>
-        val left = interpretFormula(elements.head)
-        val right = interpretFormula(elements(1))
+      case NonclassicalPolyaryFormula(NonclassicalLongOperator("$$norm", Seq()), Seq(body, head)) =>
+        val left = interpretTFFFormula(body)
+        val right = interpretTFFFormula(head)
         (left, right)
-      case _ => throw new SemanticsException(s"Norms have to be tuples with two elements, but '${formula.pretty}' was given.")
+      case _ => throw new SemanticsException(s"Norms are expressions of form '{$$$$norm} @ (l,r)' where 'l' and 'r' are " +
+        s"formulas, but '${formula.pretty}' was given.")
     }
   }
-  final def interpretFormula(formula: TPTP.THF.Formula): Formula = {
-    import TPTP.THF
-    import THF.{FunctionTerm, UnaryFormula, BinaryFormula}
+
+  final def interpretTFFFormula(formula: TPTP.TFF.Formula): Formula = {
+    import TPTP.TFF
+    import TFF.{AtomicFormula, UnaryFormula, BinaryFormula}
     formula match {
-      case FunctionTerm("$true", Seq()) => PLTop
-      case FunctionTerm("$false", Seq()) => PLBottom
-      case FunctionTerm(f, Seq()) => mkProp(f)
-      case UnaryFormula(_, body) => mkNeg(interpretFormula(body))
-      case BinaryFormula(THF.&, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case AtomicFormula("$true", Seq()) => PLTop
+      case AtomicFormula("$false", Seq()) => PLBottom
+      case AtomicFormula(f, Seq()) => mkProp(f)
+      case UnaryFormula(_, body) => mkNeg(interpretTFFFormula(body))
+      case BinaryFormula(TFF.&, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkConj(left0, right0)
-      case BinaryFormula(THF.~&, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.~&, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkNeg(mkConj(left0, right0))
-      case BinaryFormula(THF.|, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.|, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkDisj(left0, right0)
-      case BinaryFormula(THF.~|, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.~|, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkNeg(mkDisj(left0, right0))
-      case BinaryFormula(THF.Impl, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.Impl, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkImpl(left0, right0)
-      case BinaryFormula(THF.<=, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.<=, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkImpl(right0, left0)
-      case BinaryFormula(THF.<=>, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.<=>, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkConj(mkImpl(left0, right0), mkImpl(right0, left0))
-      case BinaryFormula(THF.<~>, left, right) =>
-        val left0 = interpretFormula(left)
-        val right0 = interpretFormula(right)
+      case BinaryFormula(TFF.<~>, left, right) =>
+        val left0 = interpretTFFFormula(left)
+        val right0 = interpretTFFFormula(right)
         mkNeg(mkConj(mkImpl(left0, right0), mkImpl(right0, left0)))
       case _ => throw new SemanticsException(s"Only the propositional fragment of THF is supported, but '${formula.pretty}' was given.")
+    }
+  }
+
+  final def interpretTFFTermAsFormula(term: TPTP.TFF.Term): Formula = {
+    import leo.datastructures.TPTP.TFF
+    term match {
+      case TFF.AtomicTerm(f, Seq()) => mkProp(f)
+      case TFF.FormulaTerm(formula) => interpretTFFFormula(formula)
+      case _ => throw new SemanticsException(s"Term '${term.pretty}' cannot be interpreted as formula or it lies outside of the propositional fragment of TFF.")
     }
   }
 }

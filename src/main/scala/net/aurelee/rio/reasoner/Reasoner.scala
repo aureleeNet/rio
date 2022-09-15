@@ -20,20 +20,20 @@ object Reasoner {
     val conjectureFormulas: mutable.Map[String, Formula] = mutable.Map.empty
 
     problem.foreach {
-      case TPTP.THFAnnotated(name, role, TPTP.THF.Logical(formula), _) =>
+      case TPTP.TFFAnnotated(name, role, TPTP.TFF.Logical(formula), _) =>
         role match {
           case "axiom" =>
             if (axiomFormulas.isDefinedAt(name)) throw new UnsupportedOperationException(s"Formula '$name' defined more than once.")
             else axiomFormulas += (name -> interpretNorm(formula))
           case "hypothesis" =>
             if (hypFormulas.isDefinedAt(name)) throw new UnsupportedOperationException(s"Formula '$name' defined more than once.")
-            else hypFormulas += (name -> interpretFormula(formula))
+            else hypFormulas += (name -> interpretTFFFormula(formula))
           case "conjecture" =>
             if (conjectureFormulas.isDefinedAt(name)) throw new UnsupportedOperationException(s"Formula '$name' defined more than once.")
-            else conjectureFormulas += (name -> interpretFormula(formula))
+            else conjectureFormulas += (name -> interpretTFFFormula(formula))
           case _ => throw new UnsupportedOperationException(s"Role '$role' of formula '$name' is not supported.")
         }
-      case formula => throw new UnsupportedOperationException(s"Only THF logic formulas are supported, but formula '${formula.name}' is ${formula.formulaType.toString}.")
+      case formula => throw new UnsupportedOperationException(s"Only TFF logic formulas are supported, but formula '${formula.name}' is ${formula.formulaType.toString}.")
     }
 
     // Output is the gross output if no constraints are used. Otherwise handle the constrained case.

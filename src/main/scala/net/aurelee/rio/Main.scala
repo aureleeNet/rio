@@ -88,7 +88,7 @@ object Main {
           println("% This is considered an implementation error; please report this!")
           error = true
       } finally {
-        infile.foreach(_.close())
+        try { infile.foreach(_.close())  } catch { case _:Throwable => () }
       }
       if (error) System.exit(1)
     }
@@ -106,8 +106,8 @@ object Main {
   }
 
   private[this] final def generateRioConfigFromCLI(): RioConfig = {
-    import core.interpretFormula
-    import leo.modules.input.TPTPParser.thf
+    import core.interpretTFFFormula
+    import leo.modules.input.TPTPParser.tff
     import reasoner._
     val outOperator = outOperatorParameter match {
       case Some(value) => value match {
@@ -123,7 +123,7 @@ object Main {
     val constrained = if (parameterNames("constrained-credulous")) Some(CredulousNetOutput)
                       else if (parameterNames("constrained-skeptical")) Some(SkepticalNetOutput)
                       else None
-    val constraints = constraintsParameters.map(c => interpretFormula(thf(c)))
+    val constraints = constraintsParameters.map(c => interpretTFFFormula(tff(c)))
     RioConfig(outOperator, throughput, constrained, constraints.toVector)
   }
 
