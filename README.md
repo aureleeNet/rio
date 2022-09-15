@@ -285,6 +285,14 @@ your project's classpath and calling the `Reasoner.apply` method directly.
 and uses third party libraries that are distributed under their own terms
 (see LICENSE-3RD-PARTIES file).
 
+In particular, `rio` uses
+
+- picosat, Copyright (c) 2006 - 2014, Armin Biere, Johannes Kepler University (http://fmv.jku.at/picosat/).
+- MUST (mustool), Copyright (c) 2019, Jaroslav Bendik, Masaryk University (https://github.com/jar-ben/mustool).
+- MiniSat (contained in MUST), Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson and Copyright (c) 2007-2010  Niklas Sorensson (http://minisat.se/).
+  
+
+
 ## References
 
 [1] Makinson, D., van der Torre, L.W.N.: Input/Output Logics. J. Philosophical Logic 29(4), 383–408 (2000). https://doi.org/10.1023/A:1004748624537
