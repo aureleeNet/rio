@@ -72,7 +72,6 @@ folder. Your `rio` folder should now look like this (only directories shown):
 ```
 .
 ├── contrib
-├── demo
 ├── examples
 ├── mustool
 ├── project
@@ -126,13 +125,13 @@ usage: rio [-o <operator>] [-p <parameter>] [-c <constraint>] <problem file>
 
 ## Input and output formats
 
-The input files for `rio` are plain text files according to the TPTP THF language, though
-only the propositional fragment of THF is currently supported. The semantics of formula roles
+The input files for `rio` are plain text files according to the TPTP TFF language (typed first-order logic), though
+only the propositional fragment of TFF is currently supported. The semantics of formula roles
 differs from the TPTP standard (see below), and the problem needs to contain a logic specification
 of the form 
 
 ```
-thf(<name>, logic, $iol == [<parameter> == <value>, ...]).
+tff(<name>, logic, $$iol == [<parameter> == <value>, ...]).
 ```
 
 Alternatively, semantics parameters can also be passed using command-line arguments.
