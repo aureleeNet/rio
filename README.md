@@ -71,14 +71,12 @@ folder. Your `rio` folder should now look like this (only directories shown):
 
 ```
 .
-├── bin
 ├── contrib
 ├── demo
 ├── examples
 ├── mustool
 ├── project
-├── src
-└── target
+└── src
 ```
 
 Run `make`. If no error occurs, there should be a `bin`
