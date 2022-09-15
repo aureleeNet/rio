@@ -153,20 +153,20 @@ A problem's semantics is specified using a dedicated `logic` formula, as
 foreseen in the currently explored extension of the TPTP library, cf.
 http://tptp.org/TPTP/Proposals/LogicSpecification.html for details.
 
-| Parameter      | Value                                     | Description                                                                                                        |
-|----------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
-| `$output`      | One of `$out1`, `$out2`, `$out3`, `$out4` | Select the output operator (required parameter)                                                                    |
-| `$throughput`  | `$true` or `$false`                       | Enable/Disable throughout (default: `$false`)                                                                      |
-| `$constrained` | `$credulous` or `$skeptical`              | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset) |
-| `$constraints` | `[<list of formulas>]`                    | Set the constraints for constrained output. Ignored of `$constrained` is not set (default: unset).                 |
+| Parameter       | Value                                         | Description                                                                                                        |
+|-----------------|-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `$$operator`    | One of `$$out1`, `$$out2`, `$$out3`, `$$out4` | Select the output operator (required parameter)                                                                    |
+| `$$throughput`  | `$true` or `$false`                           | Enable/Disable throughout (default: `$false`)                                                                      |
+| `$$constrained` | `$$credulous` or `$$skeptical`                | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset) |
+| `$$constraints` | `[<list of formulas>]`                        | Set the constraints for constrained output. Ignored of `$$constrained` is not set (default: unset).                |
 
 ### Problem contents
 
-| Formula role | Description                                                                                                                                                                                                                                                                      |
-|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `axiom`      | Formulas of role `axiom` specify the conditional norms. Every axiom formula needs to be a pair/tuple of the form `[left,right]` where both left and right are formulas. `left` is the *body* of the norm (the condition) and `right` is the *head* of the norm (the obligation). |
-| `hypothesis` | Formulas of role `hypothesis` denote the inputs and are regular formulas                                                                                                                                                                                                         |
-| `conjecture` | Formulas of role `conjecture` denote conjectured outputs. `rio` will check whether the formula is indeed in the output set.                                                                                                                                                      |
+| Formula role | Description                                                                                                                                                                                                                                                                                                                                                                                 |
+|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `axiom`      | TPTP formulas of role `axiom` specify the conditional norms. Every `axiom` formula needs to be an expression of the form `{$$norm} @ (left,right)` where both `left` and `right` are formulas. `left` is the *body* of the norm (the condition) and `right` is the *head* of the norm (the obligation). The can be arbitrarily many formulas of role `axiom` in a problem file (zero, too). |
+| `hypothesis` | TPTP formulas of role `hypothesis` denote the inputs and are regular formulas. There can be arbitrarily many formulas of role `hypothesis` in the problem file (zero is ok).                                                                                                                                                                                                                |
+| `conjecture` | TPTP formulas of role `conjecture` denote conjectured outputs. For each `conjecture`,  `rio` will check whether the formula is indeed in the output set and return a corresponding SZS result. There can be arbitrarily many formulas of role `conjecture` in the problem file (zero is ok).                                                                                                |
 
 ## Examples
 
@@ -178,17 +178,17 @@ are specified as THF formulas of role "conjecture":
 
 Let's say this content is stored in a file named `out1.p`:
 ```
-thf(semantics, logic, (
-    $iol == [ $output == $out1 ] )).
+tff(semantics, logic, (
+    $$iol == [ $$operator == $$out1 ] )).
 
-thf(norm1, axiom, [$true, helping]).
-thf(norm2, axiom, [helping, telling]).
-thf(norm3, axiom, [~helping, ~telling]).
+tff(norm1, axiom, {$$norm} @ ($true, helping) ).
+tff(norm2, axiom, {$$norm} @ (helping, telling) ).
+tff(norm3, axiom, {$$norm} @ (~helping, ~telling) ).
 
-thf(input1, hypothesis, ~helping).
+tff(input1, hypothesis, ~helping).
 
-thf(c1, conjecture, ~telling).
-thf(c2, conjecture, ~helping).
+tff(c1, conjecture, ~telling).
+tff(c2, conjecture, ~helping).
 ```
 
 Then you run `rio` via:
@@ -205,17 +205,17 @@ As can be seen, only one of the conjectures (only `c1`) is indeed detached.
 As a consequence, SZS status Theorem is given for `c1` but SZS status
 CounterSatisfiable is given for conjecture `c2`.
 
-### Use case 2: Generate set of obligations
+### Use case 2: Generate set of outputs
 
 If no conjectures are contained in the problem file, e.g., as in ...
 
 ```
 thf(semantics, logic, (
-    $iol == [ $output == $out3 ] )).
+    $$iol == [ $$operator == $$out3 ] )).
 
-thf(norm1, axiom, [$true, helping]).
-thf(norm2, axiom, [helping, telling]).
-thf(norm3, axiom, [~helping, ~telling]).
+thf(norm1, axiom, {$$norm} @ ($true, helping) ).
+thf(norm2, axiom, {$$norm} @ (helping, telling) ).
+thf(norm3, axiom, {$$norm} @ (~helping, ~telling) ).
 
 thf(input1, hypothesis, ~helping).
 ```
@@ -247,13 +247,13 @@ specification:
 
 ```
 thf(semantics, logic, (
-    $iol == [ $output == $out3,
-              $constrained == $credulous,
-              $constraints == [~helping] ] )).
+    $$iol == [ $$operator == $$out3,
+               $$constrained == $$credulous,
+               $$constraints == [~helping] ] )).
 
-thf(norm1, axiom, [$true, helping]).
-thf(norm2, axiom, [helping, telling]).
-thf(norm3, axiom, [~helping, ~telling]).
+thf(norm1, axiom, {$$norm} @ ($true, helping) ).
+thf(norm2, axiom, {$$norm} @ (helping, telling) ).
+thf(norm3, axiom, {$$norm} @ (~helping, ~telling) ).
 
 thf(input1, hypothesis, ~helping).
 ```
@@ -277,7 +277,6 @@ This problem file gives a consistent output set as follows:
 
 `rio`'s reasoning procedure can also be invoked by adding the .jar file to
 your project's classpath and calling the `Reasoner.apply` method directly.
-Documentation will be available soon.
  
 ## License
 
