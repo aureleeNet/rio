@@ -1,7 +1,7 @@
 lazy val rio = (project in file("."))
   .settings(
     name := "rio",
-    version := "1.1",
+    version := "1.2",
     description := "A reasoner for Input/Output logics",
     organization := "net.aurelee",
     scalaVersion := "2.13.8",
