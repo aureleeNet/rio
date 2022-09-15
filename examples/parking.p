@@ -1,8 +1,8 @@
-thf(semantics, logic, (
-    $iol == [ $output == $out4 ] )).
+tff(semantics, logic, (
+    $$iol == [ $$operator == $$out4 ] )).
 
-thf(norm1, axiom, [parking, ticket | fine]).
-thf(norm2, axiom, [ticket, pay]).
-thf(norm3, axiom, [fine, pay]).
+tff(norm1, axiom, {$$norm} @ (parking, ticket | fine) ).
+tff(norm2, axiom, {$$norm} @ (ticket, pay) ).
+tff(norm3, axiom, {$$norm} @ (fine, pay) ).
 
-thf(input1, hypothesis, parking).
+tff(input1, hypothesis, parking).

@@ -1,7 +1,7 @@
-thf(semantics, logic, (
-    $iol == [ $output == $out2 ] )).
+tff(semantics, logic, (
+    $$iol == [ $$operator == $$out2 ] )).
 
-thf(norm1, axiom, [a, x]).
-thf(norm2, axiom, [b, y]).
+tff(norm1, axiom, {$$norm} @ (a, x) ).
+tff(norm2, axiom, {$$norm} @ (b, y) ).
 
-thf(input1, hypothesis, a & ~a & c).
+tff(input1, hypothesis, a & ~a & c).

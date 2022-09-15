@@ -1,11 +1,11 @@
-thf(semantics, logic, (
-    $iol := [ $output := $out3,
-              $constrained := $credulous,
-              $constraints := [~helping] ] )).
+tff(semantics, logic, (
+    $$iol == [ $$operator == $$out3,
+               $$constrained == $$credulous,
+               $$constraints == [~helping] ] )).
 
-thf(norm1, axiom, [$true, helping]).
-thf(norm2, axiom, [helping, telling]).
-thf(norm3, axiom, [~helping, ~telling]).
+tff(norm1, axiom, {$$norm} @ ($true, helping) ).
+tff(norm2, axiom, {$$norm} @ (helping, telling) ).
+tff(norm3, axiom, {$$norm} @ (~helping, ~telling) ).
 
-thf(input1, hypothesis, ~helping).
+tff(input1, hypothesis, ~helping).
 

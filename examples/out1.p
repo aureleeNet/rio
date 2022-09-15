@@ -1,11 +1,11 @@
-thf(semantics, logic, (
-    $iol := [ $output := $out1 ] )).
+tff(semantics, logic, (
+    $$iol == [ $$operator == $$out1 ] )).
 
-thf(norm1, axiom, [$true, helping]).
-thf(norm2, axiom, [helping, telling]).
-thf(norm3, axiom, [~helping, ~telling]).
+tff(norm1, axiom, {$$norm} @ ($true, helping) ).
+tff(norm2, axiom, {$$norm} @ (helping, telling) ).
+tff(norm3, axiom, {$$norm} @ (~helping, ~telling) ).
 
-thf(input1, hypothesis, ~helping).
+tff(input1, hypothesis, ~helping).
 
-thf(c1, conjecture, ~telling).
-thf(c2, conjecture, ~helping).
+tff(c1, conjecture, ~telling).
+tff(c2, conjecture, ~helping).
