@@ -124,7 +124,7 @@ object Main {
                       else if (parameterNames("constrained-skeptical")) Some(SkepticalNetOutput)
                       else None
     val constraints = constraintsParameters.map(c => interpretTFFFormula(tff(c)))
-    RioConfig(outOperator, throughput, constrained, constraints.toVector)
+    RioConfig(outOperator, throughput, constrained, constraints.toVector, None)
   }
 
 

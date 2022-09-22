@@ -42,7 +42,23 @@ package object rio {
               case TFF.AtomicTerm("$$out4", Seq()) => Out4
               case name => throw new UnsupportedLogicException(name.pretty)
             }
-            RioConfig(outputoperator, throughput, constrained, constraints)
+            val preferenceRelation: Option[Seq[Seq[String]]] = parameterMap.get("$$preference").map {
+              case TFF.Tuple(elements) => elements.map {
+                case TFF.AtomicTerm(f, Seq()) => Seq(f)
+                case TFF.NumberTerm(TPTP.Integer(value)) => Seq(s"$value")
+                case TFF.Tuple(inner) => inner.map {
+                  case TFF.AtomicTerm(f, Seq()) => f
+                  case TFF.NumberTerm(TPTP.Integer(value)) => s"$value"
+                  case value => throw new MalformedLogicSpecificationException(s"Only formula names allowed as " +
+                    s"values parameter '$$$$preference', but '${value.pretty}' was given.")
+                }
+                case value => throw new MalformedLogicSpecificationException(s"Only formula names allowed as " +
+                  s"values parameter '$$$$preference', but '${value.pretty}' was given.")
+              }
+              case value => throw new MalformedLogicSpecificationException(s"Only a tuple of (tupled) names are allowed as " +
+                s"values for parameter '$$$$preference', but '${value.pretty}' was given.")
+            }
+            RioConfig(outputoperator, throughput, constrained, constraints, preferenceRelation)
           } else throw new UnspecifiedLogicException
         case _ => throw new MalformedLogicSpecificationException(s"Cannot read IO logic specification, only entries " +
           s"of form '$$iol == ...' are legal: ${spec.pretty}")

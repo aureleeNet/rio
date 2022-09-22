@@ -2,7 +2,7 @@ package net.aurelee.rio.reasoner
 
 import leo.datastructures.TPTP
 import net.aurelee.rio.core._
-import net.aurelee.rio.reasoner
+import net.aurelee.rio.{SemanticsException, reasoner}
 
 object Reasoner {
   sealed abstract class RioResult
@@ -35,12 +35,26 @@ object Reasoner {
         }
       case formula => throw new UnsupportedOperationException(s"Only TFF logic formulas are supported, but formula '${formula.name}' is ${formula.formulaType.toString}.")
     }
+    val preferenceRelation: Option[PreferenceRelation[Norm]] = config.preferenceRelation.map { list =>
+      val namesToNorms: Seq[Seq[Norm]] = list.map { level =>
+        level.map { normName => axiomFormulas.getOrElse(normName, throw new SemanticsException(s"Unknown norm '$normName' in preference declaration."))}
+      }
+      PreferenceRelation.fromSeqs(namesToNorms)
+    }
 
     // Output is the gross output if no constraints are used. Otherwise handle the constrained case.
     val outputBasis = config.constrained match {
       case Some(netOutputFunction) =>
         val maxFamily = reasoner.maxFamily(config.operator, hypFormulas.values.toVector, axiomFormulas.values.toVector, config.constraints, config.throughput)
-        val outFamily = reasoner.outFamily(maxFamily, config.operator, hypFormulas.values.toVector, config.throughput)
+//        println(s"maxFamily = ${maxFamily.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString(" , ")}")
+        val selectedSubsetOfMaxFamily = preferenceRelation match {
+          case Some(rel) =>
+            val liftedRelation = PreferenceRelation.brassLifting(rel)
+            PreferenceRelation.getMaximals(liftedRelation, maxFamily)
+          case None => maxFamily
+        }
+//        println(s"selectedSubset = ${selectedSubsetOfMaxFamily.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString(" , ")}")
+        val outFamily = reasoner.outFamily(selectedSubsetOfMaxFamily, config.operator, hypFormulas.values.toVector, config.throughput)
         netOutputFunction(outFamily)
       case None => config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)
     }
