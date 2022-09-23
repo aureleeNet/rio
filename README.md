@@ -14,17 +14,21 @@ extend plain I/O logics by restricting the output set to be consistent with resp
 a given set of formulas, addressing deontic paradoxes such as contrary-to-duty situations
 and other dilemmas.
 
-In the standard formulation, there are four different (unconstrained) output operators
+In the standard formulation, there are four different principal output operators
 called out<sub>1</sub>, out<sub>2</sub>, out<sub>3</sub> and out<sub>4</sub>.
 out<sub>1</sub> allows for basic detachment, out<sub>2</sub> adds reasoning-by-cases
 principles, and out<sub>3</sub> and out<sub>4</sub> augment out<sub>1</sub> and out<sub>2</sub>,
-respectively, with (cumulative) transitivity. For details, cf. we refer to [1].
+respectively, with (cumulative) transitivity. For each operator there exists a so-called throughput
+variant out<sub>i</sub><sup>+</sup>. Constrained I/O logic filter excess output that is
+inconsistent wrt. a set of constraints. Preferred output further filters the set
+of consistent outputs such that only preferred sets (wrt. to given preference relation)
+are returned. For details, cf. we refer to [1].
 
 ## The Tool
 
 `rio` provides a TPTP-aligned [3] automated reasoning system for unconstrained and
-constrained I/O logics based on the out<sub>i</sub> operators, 1 ≤ i ≤ 4.
-It is implemented as a Scala application and based on the
+constrained I/O logics based on the operators out<sub>i</sub> and out<sub>i</sub><sup>+</sup>,
+1 ≤ i ≤ 4. It is implemented as a Scala application and based on the
 `scala-tptp-parser` [4].
 
 In short, the system allows you to specify a set of conditional norms and a number
@@ -154,12 +158,13 @@ A problem's semantics is specified using a dedicated `logic` formula, as
 foreseen in the currently explored extension of the TPTP library, cf.
 http://tptp.org/TPTP/Proposals/LogicSpecification.html for details.
 
-| Parameter       | Value                                         | Description                                                                                                        |
-|-----------------|-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
-| `$$operator`    | One of `$$out1`, `$$out2`, `$$out3`, `$$out4` | Select the output operator (required parameter)                                                                    |
-| `$$throughput`  | `$true` or `$false`                           | Enable/Disable throughout (default: `$false`)                                                                      |
-| `$$constrained` | `$$credulous` or `$$skeptical`                | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset) |
-| `$$constraints` | `[<list of formulas>]`                        | Set the constraints for constrained output. Ignored of `$$constrained` is not set (default: unset).                |
+| Parameter       | Value                                         | Description                                                                                                                                                                                                                                                                                                                                         |
+|-----------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `$$operator`    | One of `$$out1`, `$$out2`, `$$out3`, `$$out4` | Select the output operator (required parameter)                                                                                                                                                                                                                                                                                                     |
+| `$$throughput`  | `$true` or `$false`                           | Enable/Disable throughout (default: `$false`)                                                                                                                                                                                                                                                                                                       |
+| `$$constrained` | `$$credulous` or `$$skeptical`                | Enable constrained output operators with credulous or skeptical net output function, respectively (default: unset)                                                                                                                                                                                                                                  |
+| `$$constraints` | `[<list of formulas>]`                        | Set the constraints for constrained output. Ignored of `$$constrained` is not set (default: unset).                                                                                                                                                                                                                                                 |
+| `$$preference`  | `[<list of name tuples>]`                     | A comma-separated list of tuples of the form `[name1,name2,...]`, where each identifier refers to the name of a norm in the problem file. Earlier norms are preferred over later norms, norms in the same tuple are equally preferred. Tuple symbols may be dropped if they are singletons. Ignored of `$$constrained` is not set (default: unset). |
 
 ### Problem contents
 
@@ -273,6 +278,38 @@ This problem file gives a consistent output set as follows:
 ~ telling
 % SZS output end ListOfFormulae for out3-constrained.p
 ```
+
+### Use case 4: Preferred output
+
+In the constrained case, a preference ordering can optionally be imposed to
+further restrict the generated outputs. 
+
+```
+tff(semantics, logic, (
+    $$iol == [ $$operator == $$out3,
+               $$constrained == $$credulous,
+               $$preference == [norm1, norm2, norm3] ] )).
+
+tff(norm1, axiom, {$$norm} @ (heatingOn, ~windowOpen) ).
+tff(norm2, axiom, {$$norm} @ ($true, windowOpen) ).
+tff(norm3, axiom, {$$norm} @ ($true, heatingOn) ).
+```
+
+
+In this case, the output is constrained to be the credulous output aggregate of
+all maximally consistent norm families wrt. detachment via out<sub>3</sub>
+(and the empty set of constraints). Additionally, the preference ordering
+`name1 > name2 > name3` is declared. See [6] for details.
+
+This problem file gives a consistent output set as follows:
+
+
+```
+% SZS status Success for examples/preferred.p
+% SZS output start ListOfFormulae for examples/preferred.p
+windowOpen
+% SZS output end ListOfFormulae for examples/preferred.p
+```
  
 ## Usage as library/API
 
@@ -304,3 +341,6 @@ In particular, `rio` uses
 [4] Steen, A.: `scala-tptp-parser` (Version v1.2). Zenodo, 2021. DOI: http://doi.org/10.5281/zenodo.4468959
 
 [5] Steen, A.: Goal-Directed Decision Procedures for Input/Output Logics. In 15th International Conference on Deontic Logic and Normative Systems (DEON 2020/2021, Munich), Fenrong Liu, Alessandra Marra, Paul Portner, and Frederik Van De Putte (Eds.), College Publications, London, 2021. (to appear). See: http://www.collegepublications.co.uk/DEON/?00003
+
+[6] Parent, X.: Moral particularism in the light of deontic logic. Artif. Intell. Law 19(2-3): 75-98 (2011)
+
