@@ -1,8 +1,7 @@
 package net.aurelee.rio
 
-import net.aurelee.rio.core.{Formula, Norm, CNF, OutOperator}
-import net.aurelee.rio.core.{body, head, mkImpl, mkConjs, cnfFormulaToMultiset, cnf}
-import net.aurelee.rio.sat.{consequence, consistent, allMUSes}
+import net.aurelee.rio.core.{CNF, Formula, Norm, OutOperator, body, cnf, cnfFormulaToMultiset, head, mkConjs, mkImpl, prettyNorm}
+import net.aurelee.rio.sat.{allMUSes, consequence, consistent}
 
 package object reasoner {
   import sat.globalPicoSATInstance
@@ -67,7 +66,9 @@ package object reasoner {
 //        set.forall(pref.greaterThanOrEqual(elem, _))
 //      }
 //      result.toSeq
-      set.filter(x => set.forall(pref.greaterThanOrEqual(x, _)))
+
+//      set.filter(x => set.forall(pref.greaterThanOrEqual(x, _)))
+      set.filter(x => !set.exists(y => pref.strictlyGreaterThan(y, x)))
     }
   }
 
@@ -100,12 +101,37 @@ package object reasoner {
                       throughput: Boolean): Seq[Seq[Norm]] = {
     var normsSets: Seq[Seq[Norm]] = Vector(norms)
     var result: Seq[Seq[Norm]] = Vector.empty
+    println(s"toCheck = ${normsSets.map(x => x.map(prettyNorm).mkString("{", ",", "}")).mkString(",\n")}")
     while(normsSets.nonEmpty) {
       val consistentNorms = normsSets.filter(n => consistent(outOperator.apply(n, input, throughput).concat(constraints)))
+      println(s"consistentNorms = ${consistentNorms.map(x => x.map(prettyNorm).mkString("{", ",", "}")).mkString(",\n")}")
       result = result.concat(consistentNorms)
       val inconsistentNorms = normsSets.diff(consistentNorms)
+      println(s"inconsistentNorms = ${inconsistentNorms.map(x => x.map(prettyNorm).mkString("{", ",", "}")).mkString(",\n")}")
       normsSets = inconsistentNorms.flatMap(subsetsOneSmaller).distinct
       normsSets = normsSets.filterNot(n => result.exists(r => subset(n,r)))
+      println(s"toCheck = ${normsSets.map(x => x.map(prettyNorm).mkString("{", ",", "}")).mkString(",\n")}")
+    }
+    result
+  }
+
+  final def maxFamilyWithNames(outOperator: OutOperator,
+                      input: Map[String, Formula],
+                      norms: Map[String, Norm],
+                      constraints: Seq[Formula],
+                      throughput: Boolean): Seq[Map[String, Norm]] = {
+    var normsSets: Seq[Map[String, Norm]] = Vector(norms)
+    var result: Seq[Map[String, Norm]] = Vector.empty
+//    println(s"toCheck = ${normsSets.map(x => x.keys.mkString("{", ",", "}")).mkString(",\n")}")
+    while (normsSets.nonEmpty) {
+      val consistentNorms = normsSets.filter(n => consistent(outOperator.apply(n.values.toSeq, input.values.toSeq, throughput).concat(constraints)))
+//      println(s"consistentNorms = ${consistentNorms.map(x => x.keys.mkString("{", ",", "}")).mkString(",\n")}")
+      result = result.concat(consistentNorms)
+      val inconsistentNorms = normsSets.diff(consistentNorms)
+//      println(s"inconsistentNorms = ${inconsistentNorms.map(x => x.keys.mkString("{", ",", "}")).mkString(",\n")}")
+      normsSets = inconsistentNorms.flatMap(subMapsOneSmaller).distinct
+      normsSets = normsSets.filterNot(n => result.exists(r => subset(n.values.toSeq, r.values.toSeq)))
+//      println(s"toCheck = ${normsSets.map(x => x.keys.mkString("{", ",", "}")).mkString(",\n")}")
     }
     result
   }
@@ -114,6 +140,14 @@ package object reasoner {
     var result: Seq[Seq[A]] = Vector.empty
     set.foreach { s =>
       result = result :+ set.diff(Seq(s))
+    }
+    result
+  }
+
+  private[this] def subMapsOneSmaller[A,B](map: Map[A,B]): Seq[Map[A,B]] = {
+    var result: Seq[Map[A,B]] = Vector.empty
+    map.foreach { case (a,_) =>
+      result = result :+ map.removed(a)
     }
     result
   }

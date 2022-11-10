@@ -28,10 +28,10 @@ package object core {
    */
   @unused type DNF = Seq[Clause]
 
-  @unused final def prettyNorm(norm: Norm): String = s"[${norm._1.pretty} , ${norm._2.pretty}]"
+  @unused final def prettyNorm(norm: Norm): String = s"[${norm._1.pretty}, ${norm._2.pretty}]"
 
   @inline final def head(norm: Norm): Head = norm._2
-  @inline final def heads(norms: Seq[Norm]): Seq[Head] = norms.map(head)
+  @inline final def heads(norms: Iterable[Norm]): Seq[Head] = norms.map(head).toSeq
   @inline final def body(norm: Norm): Body = norm._1
   @inline @unused final def bodies(norms: Seq[Norm]): Seq[Body] = norms.map(body)
 
@@ -139,6 +139,8 @@ package object core {
           case (PLBottom, _) => simpRight
           case (_, PLBottom) => simpLeft
           case (x, y) if x == y => x
+          case (x, PLNeg(y)) if x == y => PLTop
+          case (PLNeg(x), y) if x == y => PLTop
           case _ => mkDisj(simpLeft, simpRight)
         }
       case PLConj(left, right) =>
@@ -150,6 +152,8 @@ package object core {
           case (PLBottom, _) => PLBottom
           case (_, PLBottom) => PLBottom
           case (x, y) if x == y => x
+          case (x, PLNeg(y)) if x == y => PLBottom
+          case (PLNeg(x), y) if x == y => PLBottom
           case _ => mkConj(simpLeft, simpRight)
         }
       case _ => formula
@@ -160,7 +164,9 @@ package object core {
     import net.aurelee.rio.sat.consequence
     if (formulas.isEmpty) formulas
     else {
+//      println(s"interreduce formulas = ${formulas.map(_.pretty).mkString(", ")}")
       val simpSet = formulas.map(simp).distinct
+//      println(s"interreduce simpSet = ${simpSet.map(_.pretty).mkString(", ")}")
       val cnfSimp = cnf(mkConjs(simpSet)).conjs
       var subsumptionResult: Seq[Formula] = Vector.empty
       cnfSimp.foreach { f =>
@@ -180,7 +186,10 @@ package object core {
           rewriteResult = rewriteResult :+ f
         }
       }
-      cnf(simp(mkConjs(rewriteResult))).conjs
+//      println(s"rewrite result = ${rewriteResult.map(_.pretty).mkString(", ")}")
+      val result = rewriteResult.map(simp) //cnf(simp(mkConjs(rewriteResult))).conjs
+//      println(s"interreduce result = ${result.map(_.pretty).mkString(", ")}")
+      result
     }
   }
 

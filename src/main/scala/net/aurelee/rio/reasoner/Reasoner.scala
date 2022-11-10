@@ -45,16 +45,23 @@ object Reasoner {
     // Output is the gross output if no constraints are used. Otherwise handle the constrained case.
     val outputBasis = config.constrained match {
       case Some(netOutputFunction) =>
-        val maxFamily = reasoner.maxFamily(config.operator, hypFormulas.values.toVector, axiomFormulas.values.toVector, config.constraints, config.throughput)
-//        println(s"maxFamily = ${maxFamily.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString(" , ")}")
+        val constraints = config.constraints match {
+          case Seq(PLProp("$$input")) => hypFormulas.values.toSeq
+          case _ => config.constraints
+        }
+//        val maxFamily = reasoner.maxFamily(config.operator, hypFormulas.values.toVector, axiomFormulas.values.toVector, constraints, config.throughput)
+        val maxFamily = reasoner.maxFamilyWithNames(config.operator, hypFormulas.toMap, axiomFormulas.toMap, constraints, config.throughput)
+        println(s"% Info: maxFamily = ${maxFamily.map(x => x.keys.mkString("{", ",", "}")).mkString("[", ", ", "]")}")
+        val maxFamilyAsFormulas = maxFamily.map(_.values.toSeq)
         val selectedSubsetOfMaxFamily = preferenceRelation match {
           case Some(rel) =>
             val liftedRelation = PreferenceRelation.brassLifting(rel)
-            PreferenceRelation.getMaximals(liftedRelation, maxFamily)
-          case None => maxFamily
+            PreferenceRelation.getMaximals(liftedRelation, maxFamilyAsFormulas)
+          case None => maxFamilyAsFormulas
         }
-//        println(s"selectedSubset = ${selectedSubsetOfMaxFamily.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString(" , ")}")
+        println(s"% Info: prefFamily = ${selectedSubsetOfMaxFamily.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString("[", ", ", "]")}")
         val outFamily = reasoner.outFamily(selectedSubsetOfMaxFamily, config.operator, hypFormulas.values.toVector, config.throughput)
+//        println(s"outFamily = ${outFamily.map(x => x.map(_.pretty).mkString("[", ",", "]")).mkString("{", ",\n", "}")}")
         netOutputFunction(outFamily)
       case None => config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)
     }

@@ -4,7 +4,7 @@ lazy val rio = (project in file("."))
     version := "1.2",
     description := "A reasoner for Input/Output logics",
     organization := "net.aurelee",
-    scalaVersion := "2.13.8",
+    scalaVersion := "2.13.10",
     scalacOptions ++= Seq(
       "-deprecation",
       "-feature",
@@ -19,7 +19,7 @@ lazy val rio = (project in file("."))
     assemblyJarName in assembly := s"${name.value}-${version.value}.jar",
     
     licenses += "BSD-3-Clause" -> url("https://opensource.org/licenses/BSD-3-Clause"),
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.13" % "test",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.14" % "test",
     libraryDependencies += "net.java.dev.jna" % "jna" % "5.7.0",
     libraryDependencies += "io.github.leoprover" %% "scala-tptp-parser" % "1.6.4"
   )
