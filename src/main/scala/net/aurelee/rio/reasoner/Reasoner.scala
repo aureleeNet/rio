@@ -49,28 +49,29 @@ object Reasoner {
           case Seq(PLProp("$$input")) => hypFormulas.values.toSeq
           case _ => config.constraints
         }
-//        val maxFamily = reasoner.maxFamily(config.operator, hypFormulas.values.toVector, axiomFormulas.values.toVector, constraints, config.throughput)
         val maxFamily = reasoner.maxFamilyWithNames(config.operator, hypFormulas.toMap, axiomFormulas.toMap, constraints, config.throughput)
         println(s"% Info: maxFamily = ${maxFamily.map(x => x.keys.mkString("{", ",", "}")).mkString("[", ", ", "]")}")
         val maxFamilyAsFormulas = maxFamily.map(_.values.toSeq)
         val selectedSubsetOfMaxFamily = preferenceRelation match {
           case Some(rel) =>
             val liftedRelation = PreferenceRelation.brassLifting(rel)
-            PreferenceRelation.getMaximals(liftedRelation, maxFamilyAsFormulas)
+            val result = PreferenceRelation.getMaximals(liftedRelation, maxFamilyAsFormulas)
+            println(s"% Info: prefFamily = ${result.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString("[", ", ", "]")}")
+            result
           case None => maxFamilyAsFormulas
         }
-        println(s"% Info: prefFamily = ${selectedSubsetOfMaxFamily.map(x => x.map(prettyNorm).mkString("(", ",", ")")).mkString("[", ", ", "]")}")
         val outFamily = reasoner.outFamily(selectedSubsetOfMaxFamily, config.operator, hypFormulas.values.toVector, config.throughput)
 //        println(s"outFamily = ${outFamily.map(x => x.map(_.pretty).mkString("[", ",", "]")).mkString("{", ",\n", "}")}")
         netOutputFunction(outFamily)
       case None => config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)
     }
 
+    val simplifiedOutputBasis = interreduce(outputBasis)
     if (conjectureFormulas.isEmpty) {
-      OutputGenerated(outputBasis)
+      OutputGenerated(simplifiedOutputBasis)
     } else {
       import net.aurelee.rio.sat.consequence
-      val (accepted, rejected) = conjectureFormulas.partition(cf => consequence(outputBasis, cf._2))
+      val (accepted, rejected) = conjectureFormulas.partition(cf => consequence(simplifiedOutputBasis, cf._2))
       OutputVerified(accepted.toSeq, rejected.toSeq)
     }
   }

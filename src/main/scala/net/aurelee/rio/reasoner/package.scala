@@ -124,6 +124,7 @@ package object reasoner {
     var result: Seq[Map[String, Norm]] = Vector.empty
 //    println(s"toCheck = ${normsSets.map(x => x.keys.mkString("{", ",", "}")).mkString(",\n")}")
     while (normsSets.nonEmpty) {
+      //println("while normsSets.nonEmpty")
       val consistentNorms = normsSets.filter(n => consistent(outOperator.apply(n.values.toSeq, input.values.toSeq, throughput).concat(constraints)))
 //      println(s"consistentNorms = ${consistentNorms.map(x => x.keys.mkString("{", ",", "}")).mkString(",\n")}")
       result = result.concat(consistentNorms)

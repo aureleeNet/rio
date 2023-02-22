@@ -7,7 +7,7 @@ object Out1 extends OutOperator {
   override final def apply(norms: Seq[Norm], input: Seq[Formula], throughput: Boolean): Seq[Formula] = {
     val triggered = getDirectlyTriggeredNorms(input, norms)
     val triggeredHeads = heads(triggered)
-    if (throughput) interreduce(triggeredHeads.concat(input))
-    else interreduce(triggeredHeads)
+    if (throughput) triggeredHeads.concat(input)
+    else triggeredHeads
   }
 }

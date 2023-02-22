@@ -1,6 +1,6 @@
 package net.aurelee.rio.reasoner
 
-import net.aurelee.rio.core.{Formula, Norm, OutOperator, heads, interreduce}
+import net.aurelee.rio.core.{Formula, Norm, OutOperator, heads}
 
 object Out3 extends OutOperator {
   override final def name: String = "out3"
@@ -15,7 +15,7 @@ object Out3 extends OutOperator {
       triggeredNorms = triggeredNorms.concat(newNorms)
       passiveNorms = passiveNorms.diff(newNorms)
     }
-    if (throughput) interreduce(heads(triggeredNorms).concat(input))
-    else interreduce(heads(triggeredNorms))
+    if (throughput) heads(triggeredNorms).concat(input)
+    else heads(triggeredNorms)
   }
 }

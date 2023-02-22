@@ -2,14 +2,14 @@ package net.aurelee.rio.reasoner
 
 import net.aurelee.rio.core.{CNF, Formula, Norm, Head}
 import net.aurelee.rio.core.OutOperator
-import net.aurelee.rio.core.{cnf, cnfFormulaToMultiset, interreduce, mkConjs, mkDisjs, mkNeg, heads}
+import net.aurelee.rio.core.{cnf, cnfFormulaToMultiset, mkConjs, mkDisjs, mkNeg, heads}
 
 
 object Out2 extends OutOperator {
   override final def name: String = "out2"
   override final def apply(norms: Seq[Norm], input: Seq[Formula], throughput: Boolean): Seq[Formula] = {
     if (throughput) {
-      interreduce(materialization(norms).concat(input))
+      materialization(norms).concat(input)
     } else {
       import scala.collection.mutable
       // Transform list of norms to Map CNF[negated body] -> Heads
@@ -47,7 +47,7 @@ object Out2 extends OutOperator {
           weakOutput
         }
       }
-      interreduce(weakOutputs)
+      weakOutputs
     }
   }
 }

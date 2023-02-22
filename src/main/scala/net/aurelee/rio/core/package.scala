@@ -164,32 +164,53 @@ package object core {
     import net.aurelee.rio.sat.consequence
     if (formulas.isEmpty) formulas
     else {
-//      println(s"interreduce formulas = ${formulas.map(_.pretty).mkString(", ")}")
-      val simpSet = formulas.map(simp).distinct
+      println(s"interreduce formulas = ${formulas.map(_.pretty).mkString(", ")}")
+      val simpSet = formulas.map(simp)
 //      println(s"interreduce simpSet = ${simpSet.map(_.pretty).mkString(", ")}")
-      val cnfSimp = cnf(mkConjs(simpSet)).conjs
-      var subsumptionResult: Seq[Formula] = Vector.empty
-      cnfSimp.foreach { f =>
-        if (!consequence(subsumptionResult, f)) {
-          subsumptionResult = subsumptionResult.filterNot(x => consequence(Seq(f), x))
-          subsumptionResult = subsumptionResult :+ f
-        }
-      }
-      var rewriteResult: Seq[Formula] = Vector.empty
-      while (subsumptionResult.nonEmpty) {
-        val f = subsumptionResult.head
-        subsumptionResult = subsumptionResult.tail
-        if (isUnitClause(f)) {
-          subsumptionResult = subsumptionResult.map(r => simp(r.replace(getUnitAtom(f), getUnitPolarityAsFormula(f))))
-          rewriteResult = rewriteResult :+ f
+      val cnfSimp = cnf(mkConjs(simpSet))
+      val cnfSimpAsClauses: Seq[Clause] = cnfFormulaToMultiset(cnfSimp)
+
+      val unprocessed: collection.mutable.Queue[Clause] = collection.mutable.Queue(cnfSimpAsClauses:_*)
+      val processed: collection.mutable.Set[Clause] = collection.mutable.Set.empty
+      while (unprocessed.nonEmpty) {
+        val next:Clause = unprocessed.dequeue()
+        if (processed.exists(p => p.size < next.size && p.forall(lit => next.contains(lit)))) {
+          /* skip next clause, it's subsumbed by some clause in processed */
         } else {
-          rewriteResult = rewriteResult :+ f
+          // check for backwards subsumption, i.e., if next subsumes some processed clauses
+          val subsumed = processed.filter(p => p.size > next.size && next.forall(lit => p.contains(lit)))
+          if (subsumed.nonEmpty) {
+            subsumed.foreach { cl => processed.remove(cl)}
+          }
+          processed += next
+          // apply subsumption resolution, if possible
         }
+
       }
+      processed.map(mkDisjs).toSeq
+
+//      var subsumptionResult: Seq[Formula] = Vector.empty
+//      cnfSimp.foreach { f =>
+//        if (!consequence(subsumptionResult, f)) {
+//          subsumptionResult = subsumptionResult.filterNot(x => consequence(Seq(f), x))
+//          subsumptionResult = subsumptionResult :+ f
+//        }
+//      }
+//      var rewriteResult: Seq[Formula] = Vector.empty
+//      while (subsumptionResult.nonEmpty) {
+//        val f = subsumptionResult.head
+//        subsumptionResult = subsumptionResult.tail
+//        if (isUnitClause(f)) {
+//          subsumptionResult = subsumptionResult.map(r => simp(r.replace(getUnitAtom(f), getUnitPolarityAsFormula(f))))
+//          rewriteResult = rewriteResult :+ f
+//        } else {
+//          rewriteResult = rewriteResult :+ f
+//        }
+//      }
 //      println(s"rewrite result = ${rewriteResult.map(_.pretty).mkString(", ")}")
-      val result = rewriteResult.map(simp) //cnf(simp(mkConjs(rewriteResult))).conjs
+//      val result = rewriteResult.map(simp) //cnf(simp(mkConjs(rewriteResult))).conjs
 //      println(s"interreduce result = ${result.map(_.pretty).mkString(", ")}")
-      result
+//      result
     }
   }
 
