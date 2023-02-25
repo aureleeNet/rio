@@ -61,6 +61,7 @@ object Reasoner {
           case None => maxFamilyAsFormulas
         }
         val outFamily = reasoner.outFamily(selectedSubsetOfMaxFamily, config.operator, hypFormulas.values.toVector, config.throughput)
+        println(s"% Info: outFamily = ${outFamily.map(x => x.map(_.pretty).mkString("{", ",", "}")).mkString("[", ", ", "]")}")
 //        println(s"outFamily = ${outFamily.map(x => x.map(_.pretty).mkString("[", ",", "]")).mkString("{", ",\n", "}")}")
         netOutputFunction(outFamily)
       case None => config.operator.apply(axiomFormulas.values.toVector, hypFormulas.values.toVector, config.throughput)

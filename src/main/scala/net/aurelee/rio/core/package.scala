@@ -54,6 +54,13 @@ package object core {
     }
   }
 
+  final def unitComplement(unit: Formula): Formula = {
+    (unit: @unchecked) match {
+      case PLNeg(inner@PLProp(_)) => inner
+      case PLProp(_) => mkNeg(unit)
+    }
+  }
+
   @inline final def mkConj(left: Formula, right: Formula): Formula = mkConjs(Seq(left, right))
   @inline final def mkConjs(formulas: Iterable[Formula]): Formula = if (formulas.isEmpty) PLTop else formulas.reduce(PLConj)
   @inline final def mkDisj(left: Formula, right: Formula): Formula = mkDisjs(Seq(left, right))
@@ -159,59 +166,94 @@ package object core {
       case _ => formula
     }
   }
+  final def clauseSimp(clause: Clause): Clause = {
+    val distinctLiterals = clause.distinct
+    // Simp by indirection for now
+    val simped = simp(mkDisjs(distinctLiterals))
+    val result = if (simped == PLBottom) Seq.empty else simped.disjs
+    result
+  }
+  final def isTrivial(clause: Clause): Boolean = {
+    clause.contains(PLTop)
+  }
+
+  final def isFalse(clause: Clause): Boolean = {
+    clause.isEmpty
+  }
 
   final def interreduce(formulas: Seq[Formula]): Seq[Formula] = {
-    import net.aurelee.rio.sat.consequence
     if (formulas.isEmpty) formulas
     else {
-      println(s"interreduce formulas = ${formulas.map(_.pretty).mkString(", ")}")
       val simpSet = formulas.map(simp)
-//      println(s"interreduce simpSet = ${simpSet.map(_.pretty).mkString(", ")}")
       val cnfSimp = cnf(mkConjs(simpSet))
-      val cnfSimpAsClauses: Seq[Clause] = cnfFormulaToMultiset(cnfSimp)
-
-      val unprocessed: collection.mutable.Queue[Clause] = collection.mutable.Queue(cnfSimpAsClauses:_*)
+      val cnfSimpAsClauses: Set[Clause] = cnfFormulaToMultiset(cnfSimp).toSet
+      val unprocessed: collection.mutable.Queue[Clause] = collection.mutable.Queue.from(cnfSimpAsClauses)
       val processed: collection.mutable.Set[Clause] = collection.mutable.Set.empty
       while (unprocessed.nonEmpty) {
-        val next:Clause = unprocessed.dequeue()
-        if (processed.exists(p => p.size < next.size && p.forall(lit => next.contains(lit)))) {
-          /* skip next clause, it's subsumbed by some clause in processed */
-        } else {
-          // check for backwards subsumption, i.e., if next subsumes some processed clauses
-          val subsumed = processed.filter(p => p.size > next.size && next.forall(lit => p.contains(lit)))
-          if (subsumed.nonEmpty) {
-            subsumed.foreach { cl => processed.remove(cl)}
+        val next0:Clause = unprocessed.dequeue()
+        val next: Clause = clauseSimp(next0)
+        if (isTrivial(next)) { /* skip */ }
+        else if (isFalse(next)) { unprocessed.clear; processed.clear; processed += next }
+        else {
+          if (processed.exists(p => p.size < next.size && p.forall(lit => next.contains(lit)))) {
+            /* skip next clause, it's subsumbed by some clause in processed */
+          } else {
+            // check for backwards subsumption, i.e., if next subsumes some processed clauses
+            val subsumed = processed.filter(p => p.size > next.size && next.forall(lit => p.contains(lit)))
+            if (subsumed.nonEmpty) {
+              subsumed.foreach { cl => processed.remove(cl) }
+            }
+            // apply subsumption resolution, if possible
+            val (removeClauses, newClauses) = subsumptionRes(processed, next)
+            processed += next // will maybe be removed by `removeClauses` again
+            unprocessed.enqueueAll(newClauses.map(clauseSimp).filterNot(isTrivial))
+            processed --= removeClauses
           }
-          processed += next
-          // apply subsumption resolution, if possible
         }
-
       }
       processed.map(mkDisjs).toSeq
-
-//      var subsumptionResult: Seq[Formula] = Vector.empty
-//      cnfSimp.foreach { f =>
-//        if (!consequence(subsumptionResult, f)) {
-//          subsumptionResult = subsumptionResult.filterNot(x => consequence(Seq(f), x))
-//          subsumptionResult = subsumptionResult :+ f
-//        }
-//      }
-//      var rewriteResult: Seq[Formula] = Vector.empty
-//      while (subsumptionResult.nonEmpty) {
-//        val f = subsumptionResult.head
-//        subsumptionResult = subsumptionResult.tail
-//        if (isUnitClause(f)) {
-//          subsumptionResult = subsumptionResult.map(r => simp(r.replace(getUnitAtom(f), getUnitPolarityAsFormula(f))))
-//          rewriteResult = rewriteResult :+ f
-//        } else {
-//          rewriteResult = rewriteResult :+ f
-//        }
-//      }
-//      println(s"rewrite result = ${rewriteResult.map(_.pretty).mkString(", ")}")
-//      val result = rewriteResult.map(simp) //cnf(simp(mkConjs(rewriteResult))).conjs
-//      println(s"interreduce result = ${result.map(_.pretty).mkString(", ")}")
-//      result
     }
+  }
+
+  // Sometimes I really hate Scala ... with doesn't this exist in the collections library?
+  private final def seqWithout[A](list: Seq[A], element: A): Seq[A] = seqWithout0(list, element, Seq.empty)
+  @tailrec @inline private final def seqWithout0[A](list: Seq[A], element: A, acc: Seq[A]):Seq[A] = {
+    if (list.isEmpty) acc
+    else {
+      val hd = list.head
+      val tail = list.tail
+      if (hd == element) acc ++ tail
+      else seqWithout0(tail, element, acc :+ hd)
+    }
+  }
+
+  final def subsumptionRes(processed: collection.mutable.Set[Clause], clause: Clause): (Seq[Clause], Seq[Clause]) = {
+    val newClauses: collection.mutable.Set[Clause] = collection.mutable.Set.empty
+    val removeClauses: collection.mutable.Set[Clause] = collection.mutable.Set.empty
+    var done = false
+    processed.foreach { otherClause =>
+      if (!done) {
+        val (potentialSubsumer, potentialSubsumed) = if (otherClause.size <= clause.size) (otherClause, clause) else (clause, otherClause)
+        val litCombinations = potentialSubsumer.to(LazyList).flatMap(x => potentialSubsumed.map((x, _)))
+        val maybeMatch = litCombinations.find { case (l, r) =>
+          l == unitComplement(r) && seqWithout(potentialSubsumer, l).diff(seqWithout(potentialSubsumed, r)).isEmpty
+        }
+        maybeMatch match {
+          case None => // Nothing
+          case Some((_, r)) =>
+            val newClause: Clause = seqWithout(potentialSubsumed, r)
+            if (potentialSubsumed == clause) { // next taken clause is subsumed, remove potentially subsumed clauses by it
+              // (will still be subsumed later...)
+              done = true
+              newClauses.clear()
+              removeClauses.clear()
+            }
+            newClauses += newClause
+            removeClauses += potentialSubsumed
+        }
+      }
+    }
+    (removeClauses.toSeq, newClauses.toSeq)
   }
 
   final def cnfFormulaToMultiset(cnf: Formula): CNF = {
